@@ -1,0 +1,23 @@
+/* ==========================================================================
+   Brett Red — theme overrides
+   Layered on top of Framer's generated CSS.
+   ========================================================================== */
+
+/* ---- Text Chip: frosted-glass pill ---- */
+[data-framer-name="Text Chip"] {
+  /* Soft white glass fill — visible over image cards, near-invisible over white cards */
+  background-color: rgba(255, 255, 255, 0.55) !important;
+
+  /* Backdrop blur for the glass effect (Safari + Chromium) */
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+
+  /* Brighten the existing 1px border so the pill reads as a single object */
+  --border-color: rgba(255, 255, 255, 0.85) !important;
+
+  /* Subtle outer + inner shadow so the pill lifts off image backgrounds */
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 6px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}

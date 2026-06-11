@@ -1,0 +1,218 @@
+/* ==========================================================================
+   Brett Red — Secret Edit Mode
+   Additive overlay. Does not touch Framer's generated layout unless
+   .br-edit-on is set on <html>.
+   ========================================================================== */
+
+/* ---- Footer trigger (always available, very subtle) ---- */
+[data-framer-name="v2/Footer"] {
+  cursor: pointer;
+}
+
+/* ---- Modal backdrop ---- */
+.br-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 8, 12, 0.58);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2147483600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+.br-modal-backdrop.br-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---- Modal panel ---- */
+.br-modal {
+  width: min(92vw, 360px);
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  padding: 28px 24px 22px;
+  transform: translateY(8px) scale(0.98);
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.br-modal-backdrop.br-open .br-modal { transform: none; }
+.br-modal.br-shake { animation: br-shake 320ms ease; }
+@keyframes br-shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-8px); }
+  40%, 60% { transform: translateX(8px); }
+}
+
+.br-modal h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #111;
+}
+.br-modal p {
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: #6b6b72;
+}
+.br-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.br-field label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a8a90;
+}
+.br-field input {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e2e6;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+  background: #fafafa;
+}
+.br-field input:focus {
+  border-color: #111;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+  background: #fff;
+}
+
+.br-error {
+  font-size: 12px;
+  color: #d33;
+  min-height: 16px;
+  margin: -2px 0 8px;
+}
+
+.br-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+.br-btn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 80ms ease, background 120ms ease, opacity 120ms ease;
+}
+.br-btn:active { transform: translateY(1px); }
+.br-btn-primary { background: #111; color: #fff; }
+.br-btn-primary:hover { background: #000; }
+.br-btn-ghost { background: transparent; color: #6b6b72; }
+.br-btn-ghost:hover { background: #f2f2f4; color: #111; }
+
+/* ---- Edit-mode pill (top-right) ---- */
+.br-edit-pill {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2147483500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 14px;
+  background: rgba(17, 17, 17, 0.92);
+  color: #fff;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.br-edit-pill .br-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.6);
+  animation: br-pulse 1.6s infinite;
+}
+@keyframes br-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.6); }
+  100% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
+}
+.br-edit-pill .br-bp {
+  font-size: 10px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  margin-left: 4px;
+}
+.br-edit-pill button {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.br-edit-pill button:hover { background: rgba(255, 255, 255, 0.22); }
+.br-edit-pill button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ---- Card affordances (only when edit mode is on) ---- */
+html.br-edit-on .br-card {
+  cursor: grab;
+  /* Override Framer's scroll-driven CSS animation that pins transform */
+  animation: none !important;
+  transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 180ms ease, outline-color 180ms ease !important;
+  will-change: transform;
+  outline: 2px dashed transparent;
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+html.br-edit-on .br-card:hover {
+  outline-color: rgba(17, 17, 17, 0.35);
+}
+html.br-edit-on .br-card.br-dragging {
+  cursor: grabbing;
+  z-index: 2147483400 !important;
+  transition: none;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.28);
+  outline-color: #111;
+}
+html.br-edit-on .br-card.br-drop-target {
+  outline-color: #4ade80;
+  outline-style: solid;
+  outline-width: 3px;
+  box-shadow: 0 0 0 6px rgba(74, 222, 128, 0.18);
+}
+
+/* While dragging, suppress link navigation */
+html.br-edit-on .br-card,
+html.br-edit-on .br-card * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Hide footer cursor hint once edit mode is on (already inside) */
+html.br-edit-on [data-framer-name="v2/Footer"] {
+  cursor: default;
+}
