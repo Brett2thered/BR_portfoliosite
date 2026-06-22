@@ -113,13 +113,28 @@ const diffPixels = async (page, fileA, fileB) => {
       await p.waitForTimeout(250);
       const r = await loc.evaluate((el) => { const c = el.getBoundingClientRect(); return { x: Math.max(0, c.x), y: Math.max(0, c.y), width: Math.min(c.width, 1780), height: Math.min(c.height, 920) }; });
       await loc.hover({ timeout: 5000 });
-      await p.waitForTimeout(220); // mid-sweep
-      await p.screenshot({ path: "/tmp/v-mid.png", clip: r });
-      await p.waitForTimeout(1200); // settled, band parked
+      // Per-card durations span ~0.9–2.3s (easeInOutSine), so no single offset
+      // lands the band on-card for every card. Sample several frames across the
+      // union of all on-card windows and take the largest change vs the settled
+      // (parked) frame — every card is mid-sweep in at least one frame.
+      const offsets = [300, 550, 800, 1100, 1400];
+      const frames = [];
+      let prev = 0;
+      for (let k = 0; k < offsets.length; k++) {
+        await p.waitForTimeout(offsets[k] - prev); prev = offsets[k];
+        const f = `/tmp/v-f${k}.png`;
+        await p.screenshot({ path: f, clip: r });
+        frames.push(f);
+      }
+      await p.waitForTimeout(2700 - prev); // settled: past the slowest card's parking
       await p.screenshot({ path: "/tmp/v-set.png", clip: r });
-      const d = await diffPixels(p, "/tmp/v-mid.png", "/tmp/v-set.png");
-      const ok = d.diff > d.total * 0.01; // >1% of card pixels changed mid-sweep
-      if (ok) pass++; else fail.push(`${card.name} (${((100 * d.diff) / d.total).toFixed(2)}%)`);
+      let best = 0;
+      for (const f of frames) {
+        const d = await diffPixels(p, f, "/tmp/v-set.png");
+        if (d.diff !== undefined) best = Math.max(best, d.diff / d.total);
+      }
+      const ok = best > 0.01; // >1% of card pixels changed at peak sweep
+      if (ok) pass++; else fail.push(`${card.name} (${(100 * best).toFixed(2)}%)`);
     } catch (e) {
       unhoverable.push(`${card.name} [${e.message.split("\n")[0]}]`);
     }

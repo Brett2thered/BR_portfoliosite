@@ -1,3 +1,6 @@
 node_modules/
 .DS_Store
 .claude/tsc-cache/
+
+# Large source video — exceeds GitHub's 100MB per-file limit (use Git LFS if needed)
+export/assets/TT.mov

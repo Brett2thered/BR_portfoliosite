@@ -21,3 +21,84 @@
     0 6px 16px rgba(0, 0, 0, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
+
+/* ---- Large-display masonry: cards must fill their column ----
+   Framer's export gives every masonry card a `width:100%` override at each
+   breakpoint EXCEPT the >=2633px "ultra-wide" variant, where a few cards
+   (e.g. Arya Works `framer-pcj8k8`, Navdy `framer-7mwsty`) fall back to their
+   200px component default. That gap was invisible while the ultra-wide layout
+   hid most cards; the 4-column layout (theme.js, >=2560px) now renders that
+   range fully and exposes it. Restore the missing override so every column
+   child fills its track. No-op below 2560px and in 2560–2632px, where cards
+   are already 100%. Threshold matches theme.js FOUR_COL_MIN. */
+@media (min-width: 2560px) {
+  [data-framer-name="Column 1"] > *,
+  [data-framer-name="Column 2"] > *,
+  [data-framer-name="Column 3"] > *,
+  [data-framer-name="Column 4"] > * {
+    width: 100% !important;
+  }
+}
+
+/* ---- Large-display: inner content of embed/mockup cards must scale ----
+   Framer's >=2633px variant sizes some cards' INNER content with fixed pixels
+   authored for a wider layout. In the 4-column layout (narrower cards) that
+   fixed content over-zooms and clips. Restore the fluid, card-relative sizing
+   the desktop variant uses so the content scales with the column. */
+
+/* Arya Works — the phone mockup is a fixed 1086px wide in BOTH the 3-col and
+   >=2633 variants, so it over-zooms once the card is narrower than ~826px,
+   which the 4-col layout always is. Fix across the whole 4-col range. */
+@media (min-width: 2560px) {
+  /* Pin the card's height (537px at every desktop+ breakpoint). The >=2633
+     variant gives the card no explicit height — it borrows it from the in-flow
+     clip frame below, so taking that frame out of flow would collapse the card
+     to zero. */
+  [data-framer-name="Arya Works"] {
+    height: 537px !important;
+  }
+  /* Clip frame: fill the card (the >=2633 base freezes it at 535px). */
+  [data-framer-name="Arya Works"] .framer-1aquolq {
+    position: absolute !important;
+    inset: 0 -3px !important;
+    width: unset !important;
+    height: unset !important;
+  }
+  /* Phone: scale to the card width, capped at its natural 1086px, keeping the
+     mockup's aspect ratio and centring it (matches the desktop composition). */
+  [data-framer-name="Arya Works"] .framer-1r2ath3 {
+    width: min(1086px, 131%) !important;
+    aspect-ratio: 1086 / 684 !important;
+    height: auto !important;
+    left: 50% !important;
+    right: auto !important;
+    top: 14.1% !important;
+    bottom: auto !important;
+    transform: translateX(-50%) !important;
+  }
+  /* Inner image fills the (now fluid) mockup frame. */
+  [data-framer-name="Arya Works"] .framer-1r2ath3 > * {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
+
+/* Anchor Maps — the >=2633 base freezes the card at height:395px and the embed
+   at 406px, so the map renders as a clipped thin strip that gets ever wider and
+   shorter as the viewport grows. Restore the desktop variant's fluid sizing:
+   card height tracks width via aspect-ratio, embed fills it with bleed. The
+   2560–2632 sub-range already uses the desktop rules, so only patch >=2633. */
+@media (min-width: 2633px) {
+  [data-framer-name="Anchor Player"] {
+    aspect-ratio: 0.98125 !important;
+    height: auto !important;
+  }
+  [data-framer-name="Anchor Player"] .framer-19gyy1y-container {
+    position: absolute !important;
+    top: -15px !important;
+    bottom: -16px !important;
+    left: -2.63876% !important;
+    width: 105% !important;
+    height: unset !important;
+  }
+}

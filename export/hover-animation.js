@@ -43,7 +43,23 @@
 
   var SCALE = 1.04;
   var SPRING = { type: "spring", stiffness: 350, damping: 28 };
-  var SWEEP = { duration: 0.85, ease: [0.3, 0.6, 0.3, 1] };
+
+  // Glassy sweep — slow and smooth. easeInOutSine is the gentlest symmetric
+  // curve, so the band glides in and back out with no snap at either end.
+  // Each card then gets a small deterministic offset in speed, brightness,
+  // and band width (computed per card below) so the masonry never shines in
+  // lockstep — same card keeps the same character across reloads.
+  var SWEEP_EASE = [0.37, 0, 0.63, 1]; // easeInOutSine
+  var SWEEP_DUR = 1.6;                  // s, base (was 0.85 — sharper, faster)
+  var BAND_WIDTH = 60;                  // %, base band width
+  var SHINE_PEAK = 0.42;               // base peak white opacity
+
+  // Deterministic pseudo-random in [0,1) from an integer seed — the classic
+  // fract(sin) hash. Stable per index, so each card keeps its personality.
+  function hash01(n) {
+    var x = Math.sin((n + 1) * 12.9898) * 43758.5453;
+    return x - Math.floor(x);
+  }
 
   // Collect card roots from the masonry columns. Skip nested Column stacks
   // (layout, not cards); unwrap component containers to the card they hold.
@@ -126,7 +142,7 @@
     }, 150);
   });
 
-  roots.forEach(function (el) {
+  roots.forEach(function (el, i) {
     if (getComputedStyle(el).position === "static") el.style.position = "relative";
 
     // In-flow wrapper first: content-sized cards (Stats, Hack, text cards)
@@ -165,22 +181,31 @@
     // Diagonal gradient gives the slant, so the band only ever translates
     // on x. Faint dark flanks keep the sweep readable on white cards, where
     // a pure-white sheen would be invisible.
+    // Per-card variation: small, decorrelated offsets in speed, brightness,
+    // and band width so each card's glint feels a little different. Travel
+    // (the x range in the hover handler) stays constant — duration alone sets
+    // the pace, the width sets the spread, the gradient sets the brightness.
+    var dur = SWEEP_DUR + (hash01(i) - 0.5) * 1.4;          // ~0.90–2.30 s
+    var w = BAND_WIDTH + (hash01(i + 101) - 0.5) * 40;      // ~40–80 %
+    var peak = SHINE_PEAK + (hash01(i + 211) - 0.5) * 0.36; // ~0.24–0.60
+    var mid = peak * 0.43;                                   // inner glow, kept proportional to peak
+
     var band = document.createElement("div");
     band.style.cssText =
-      "position:absolute;top:0;bottom:0;left:0;width:60%;" +
+      "position:absolute;top:0;bottom:0;left:0;width:" + w.toFixed(1) + "%;" +
       "transform:translateX(-170%);will-change:transform;" +
       "background:linear-gradient(105deg," +
       "rgba(0,0,0,0) 0%," +
       "rgba(0,0,0,0.05) 22%," +
-      "rgba(255,255,255,0.18) 38%," +
-      "rgba(255,255,255,0.42) 50%," +
-      "rgba(255,255,255,0.18) 62%," +
+      "rgba(255,255,255," + mid.toFixed(3) + ") 38%," +
+      "rgba(255,255,255," + peak.toFixed(3) + ") 50%," +
+      "rgba(255,255,255," + mid.toFixed(3) + ") 62%," +
       "rgba(0,0,0,0.05) 78%," +
       "rgba(0,0,0,0) 100%);";
 
     shine.appendChild(band);
     el.appendChild(shine);
-    cards.set(el, { wrap: wrap, band: band });
+    cards.set(el, { wrap: wrap, band: band, dur: dur });
   });
 
   M.hover(roots, function (el) {
@@ -189,7 +214,7 @@
 
     M.animate(card.wrap, { scale: SCALE }, SPRING);
     // One glassy sweep per hover-enter; the band parks off-card on the right.
-    M.animate(card.band, { x: ["-170%", "280%"] }, SWEEP);
+    M.animate(card.band, { x: ["-170%", "280%"] }, { duration: card.dur, ease: SWEEP_EASE });
 
     // Returned callback fires on pointer-leave.
     return function () {
