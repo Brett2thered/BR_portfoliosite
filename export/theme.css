@@ -176,3 +176,89 @@
 [data-framer-name="Ranked Designer"] * {
   align-items: center !important;
 }
+
+/* ==========================================================================
+   Mobile (sm, <=833.98px) — show every card + fix the giant THANK YOU
+   --------------------------------------------------------------------------
+   Framer's mobile export hides Columns 2 and 3 entirely (via `hidden-1cfiwka`
+   and `hidden-7pcg6j`) and hides 3 cards inside Column 1 (Anchor Maps, Intel,
+   Stat: Ranked) with the same class. That's 21 of 26 cards gone on phones.
+   Restore them all by:
+     1. Flipping the Column Container to a vertical stack (was row-flex).
+     2. Un-hiding Columns 2 and 3 (they were display:none via Framer's classes)
+        and making them full width in the stacked layout.
+     3. Un-hiding the individual sm-hidden cards inside Column 1.
+   Selectors combine the framer-name attribute with the hide class, so their
+   specificity (0,2,0) beats Framer's own `.hidden-*` rules (0,1,0); the
+   !important is belt-and-braces because Framer sometimes emits its own
+   !important on the display:none.
+
+   Also: at 335px wide the "THANK YOU" text is 212.86px / 255px line-height
+   (Framer forgot to size it for sm), so a single word wraps to 1277px tall
+   and the shader canvas obediently grows to match. Cap the font-size to
+   something that fits, and both problems collapse. */
+@media (max-width: 833.98px) {
+  /* Stack by wrapping, NOT by flex-direction:column — the columns' children are
+     absolutely-positioned masonry items whose parent needs a real width in the
+     original row-flex context to lay themselves out. Wrap + force every column
+     to 100% flex-basis puts each column on its own row while preserving the
+     original per-column sizing behaviour. */
+  [data-framer-name="Column Container"] {
+    flex-wrap: wrap !important;
+  }
+  [data-framer-name="Column 1"],
+  [data-framer-name="Column 2"].hidden-1cfiwka,
+  [data-framer-name="Column 3"].hidden-1cfiwka,
+  [data-framer-name="Column 3"].hidden-7pcg6j {
+    display: flex !important;
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  [data-framer-name="Column 1"] > .hidden-1cfiwka,
+  [data-framer-name="Column 2"] > .hidden-1cfiwka,
+  [data-framer-name="Column 3"] > .hidden-1cfiwka {
+    display: flex !important;
+  }
+
+  [data-framer-name="THANK YOU"] .framer-text {
+    font-size: clamp(56px, 22vw, 110px) !important;
+    line-height: 1.0 !important;
+  }
+
+  /* Reorder for mobile intent — Brett-intro video should sit at position #2,
+     right after the Hello intro card. Framer masonry sorts by CSS `order`,
+     ties broken by DOM position. Intro is order 0; giving Brett Player order 1
+     places it between Intro and Anchor Player (order 3). Push Intel and Ranked
+     Designer (both order 0 by default) to the tail so they don't tie with
+     Intro and get slotted before Brett. Numbers avoid Framer's own values
+     (0, 2, 3, 13, 18). */
+  [data-framer-name="Column 1"] > [data-framer-name="Brett Player"] {
+    order: 1 !important;
+  }
+  [data-framer-name="Column 1"] > [data-framer-name="Intel"] {
+    order: 20 !important;
+  }
+  [data-framer-name="Column 1"] > [data-framer-name="Ranked Designer"] {
+    order: 21 !important;
+  }
+}
+
+/* ==========================================================================
+   Tablet / small-desktop sizing correction (480–833.98px)
+   --------------------------------------------------------------------------
+   The sm rules above stack every card at 100% width. On a phone (≤~480px)
+   that width matches the width the cards were designed for. On a tablet-
+   sized viewport (500–833px) the same cards blow up to 500–800px, and
+   image / video cards with fixed heights (Anchor Player is 395px, Brett
+   Player 189px, etc.) turn into landscape letterboxes. Cap the stack at
+   440px centred so cards render at proportions close to their original
+   masonry-column design. Doesn't affect the ≤480 range: `min(100%, 440px)`
+   is 100% below 440. */
+@media (min-width: 480px) and (max-width: 833.98px) {
+  [data-framer-name="Column Container"] {
+    max-width: 440px !important;
+    margin-inline: auto !important;
+  }
+}
+

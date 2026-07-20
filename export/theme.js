@@ -245,6 +245,77 @@
     else if (mq.addListener) mq.addListener(sync); // Safari < 14
   }
 
+  // ---------- Anchor Player: globe poster fallback ----------
+  // The Anchor Player card embeds a Vimeo iframe (video 1040926517) — a black
+  // globe animation on a white canvas. Vimeo's autoplay is blocked in some
+  // contexts (embedded WebViews, Safari's low-power mode, unfocused tabs on
+  // load) and until it fires the iframe paints its own white body, so the
+  // card renders empty except for the tiny centred thumbnail. Overlay the
+  // saved video poster (assets/anchor-globe.webp) on top of the iframe with
+  // pointer-events:none, then fade the overlay out when Vimeo posts its first
+  // `play` event. If autoplay never fires the overlay just stays visible —
+  // still the correct visual for the card.
+  function setupAnchorPoster() {
+    var card = document.querySelector('[data-framer-name="Anchor Player"]');
+    if (!card || card.querySelector('[data-br-anchor-poster]')) return;
+    var iframe = card.querySelector('iframe');
+    if (!iframe) {
+      // Framer lazy-injects the Vimeo iframe after first paint. Retry once
+      // it appears, then bail.
+      var obs = new MutationObserver(function () {
+        if (card.querySelector('iframe')) { obs.disconnect(); setupAnchorPoster(); }
+      });
+      obs.observe(card, { childList: true, subtree: true });
+      return;
+    }
+
+    var poster = document.createElement('div');
+    poster.setAttribute('data-br-anchor-poster', '');
+    poster.style.cssText = [
+      'position:absolute',
+      'inset:0',
+      'background:#fff url(assets/anchor-globe.webp) center/contain no-repeat',
+      'pointer-events:none',
+      'opacity:1',
+      'transition:opacity 400ms ease',
+      'z-index:1'
+    ].join(';');
+
+    // The iframe is inside a positioned wrapper; place the poster as a sibling
+    // so it shares the same clipping rect and z-context. hover-animation.js
+    // moves the whole subtree into its own hover-zoom wrap div later, so the
+    // poster inherits that transform and stays aligned with the iframe.
+    var wrap = iframe.parentElement;
+    if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+    wrap.appendChild(poster);
+
+    // Fade poster out on first `play` event from the Vimeo player.
+    var faded = false;
+    function fade() {
+      if (faded) return;
+      faded = true;
+      poster.style.opacity = '0';
+      setTimeout(function () { if (poster.parentNode) poster.parentNode.removeChild(poster); }, 500);
+      window.removeEventListener('message', onMsg);
+    }
+    function onMsg(e) {
+      if (!/vimeo\.com/.test(e.origin)) return;
+      var data = e.data;
+      try { if (typeof data === 'string') data = JSON.parse(data); } catch (err) { return; }
+      if (data && (data.event === 'play' || data.event === 'playing')) fade();
+    }
+    window.addEventListener('message', onMsg);
+
+    // Subscribe to Vimeo's play events. Post once the iframe reports ready.
+    function subscribe() {
+      try {
+        iframe.contentWindow.postMessage({ method: 'addEventListener', value: 'play' }, '*');
+      } catch (err) { /* cross-origin — silently ignore */ }
+    }
+    if (iframe.contentWindow) subscribe();
+    iframe.addEventListener('load', subscribe);
+  }
+
   // ---------- Public API ----------
   function listCards() {
     return CARDS.map(function (c) {
@@ -258,6 +329,7 @@
     tagCards();
     fixDroppedCards();
     setupResponsiveColumns();
+    setupAnchorPoster();
   }
 
   if (document.readyState === 'loading') {
@@ -272,6 +344,7 @@
     tagCards: tagCards,
     fixDroppedCards: fixDroppedCards,
     setupResponsiveColumns: setupResponsiveColumns,
+    setupAnchorPoster: setupAnchorPoster,
     list: listCards
   };
 })();
