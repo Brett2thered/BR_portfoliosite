@@ -1,0 +1,23 @@
+# Crawl policy for brett.red
+User-agent: *
+Allow: /
+
+# Do not crawl archived or development-only files.
+Disallow: /assets/
+Disallow: /index.html.bak
+Disallow: /index.html.prehover
+
+# AI crawlers follow the same public-content policy.
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: Claude-Web
+User-agent: Google-Extended
+Allow: /
+Disallow: /assets/
+Disallow: /index.html.bak
+Disallow: /index.html.prehover
+
+Sitemap: https://www.brett.red/sitemap.xml
+
+# Content usage preferences: searchable and available for agent input, not AI training.
+Content-Signal: ai-train=no, search=yes, ai-input=yes
