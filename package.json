@@ -4,8 +4,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "analytics": "node scripts/inject-ga.mjs",
     "sitemap": "node scripts/generate-sitemap.mjs",
-    "prepublishOnly": "npm run sitemap"
+    "prepublishOnly": "npm run analytics && npm run sitemap"
   },
   "keywords": [],
   "author": "",
