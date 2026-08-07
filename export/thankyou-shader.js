@@ -68,9 +68,14 @@
     "  vec2 uv = gl_FragCoord.xy / uResolution.xy;",
     "  float aspect = uResolution.x / max(uResolution.y, 1.0);",
     "  vec2 p = vec2(uv.x * aspect, uv.y);",
-    "  float t = uTime * 0.05;", // slow drift
+    // 0.25 gives a noticeable drift within a couple of seconds — the earlier
+    // 0.05 was slow enough that a glance made the field look static.
+    "  float t = uTime * 0.25;",
     "  vec2 q = vec2(fbm(p * 2.0 + t), fbm(p * 2.0 + vec2(5.2, 1.3) - t));",
-    "  float f = fbm(p * 3.0 + q * 1.6 + t * 0.5);",
+    // Add a slow orbital pan so bright hotspots visibly drift across the
+    // canvas rather than only shimmering in place.
+    "  vec2 pan = vec2(cos(t * 0.7), sin(t * 0.5)) * 0.35;",
+    "  float f = fbm(p * 3.0 + q * 1.6 + pan + t * 0.5);",
     "  f = clamp(f, 0.0, 1.0);",
     "  vec3 c0 = vec3(0.0);",          // #000000
     "  vec3 c1 = vec3(0.102);",        // #1a1a1a
