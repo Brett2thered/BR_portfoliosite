@@ -245,36 +245,51 @@
     else if (mq.addListener) mq.addListener(sync); // Safari < 14
   }
 
-  // ---------- Anchor Player: globe poster fallback ----------
-  // The Anchor Player card embeds a Vimeo iframe (video 1040926517) — a black
-  // globe animation on a white canvas. Vimeo's autoplay is blocked in some
-  // contexts (embedded WebViews, Safari's low-power mode, unfocused tabs on
-  // load) and until it fires the iframe paints its own white body, so the
-  // card renders empty except for the tiny centred thumbnail. Overlay the
-  // saved video poster (assets/anchor-globe.webp) on top of the iframe with
-  // pointer-events:none, then fade the overlay out when Vimeo posts its first
-  // `play` event. If autoplay never fires the overlay just stays visible —
-  // still the correct visual for the card.
-  function setupAnchorPoster() {
-    var card = document.querySelector('[data-framer-name="Anchor Player"]');
-    if (!card || card.querySelector('[data-br-anchor-poster]')) return;
+  // ---------- Vimeo poster fallback ----------
+  // Cards that embed a Vimeo iframe render empty white until Vimeo autoplays,
+  // and autoplay is blocked in many contexts (embedded WebViews, Safari's
+  // low-power mode, unfocused tabs on load, or any iframe URL that isn't
+  // muted). Overlay the saved video poster on top of the iframe with
+  // pointer-events:none, then fade it out when Vimeo posts its first `play`
+  // event. If autoplay never fires the overlay just stays visible — still the
+  // correct visual for the card. Also normalises the iframe URL — `muted=1`
+  // and `loop=1` — so autoplay is actually allowed to succeed where the
+  // browser policy is muted-only.
+  function setupVimeoPoster(cardName, posterAsset, opts) {
+    var card = document.querySelector('[data-framer-name="' + cardName + '"]');
+    if (!card) return;
+    var marker = 'data-br-vimeo-poster';
+    if (card.querySelector('[' + marker + ']')) return;
     var iframe = card.querySelector('iframe');
     if (!iframe) {
       // Framer lazy-injects the Vimeo iframe after first paint. Retry once
       // it appears, then bail.
       var obs = new MutationObserver(function () {
-        if (card.querySelector('iframe')) { obs.disconnect(); setupAnchorPoster(); }
+        if (card.querySelector('iframe')) { obs.disconnect(); setupVimeoPoster(cardName, posterAsset, opts); }
       });
       obs.observe(card, { childList: true, subtree: true });
       return;
     }
 
+    // Normalise the URL so muted=1 and loop=1 are both set — the Framer-
+    // exported URL sometimes ships with muted=0, which browsers refuse to
+    // autoplay silently.
+    if (opts && opts.forceMuted) {
+      try {
+        var u = new URL(iframe.src);
+        u.searchParams.set('muted', '1');
+        u.searchParams.set('autoplay', '1');
+        u.searchParams.set('loop', '1');
+        if (iframe.src !== u.toString()) iframe.src = u.toString();
+      } catch (err) { /* older browsers without URL — skip */ }
+    }
+
     var poster = document.createElement('div');
-    poster.setAttribute('data-br-anchor-poster', '');
+    poster.setAttribute(marker, cardName);
     poster.style.cssText = [
       'position:absolute',
       'inset:0',
-      'background:#fff url(assets/anchor-globe.webp) center/contain no-repeat',
+      'background:#fff url(' + posterAsset + ') center/cover no-repeat',
       'pointer-events:none',
       'opacity:1',
       'transition:opacity 400ms ease',
@@ -289,31 +304,79 @@
     if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
     wrap.appendChild(poster);
 
-    // Fade poster out on first `play` event from the Vimeo player.
+    // Fade poster once we've confirmed *sustained* playback. Vimeo's `play`,
+    // `playing`, and `timeupdate` events all fire optimistically — even when
+    // the browser blocks autoplay and Vimeo pauses moments later — so we
+    // combine two independent signals from Vimeo's JS API and require them
+    // to agree across four consecutive polls (~4s): the player reports
+    // `getPaused` false, and `getCurrentTime` is strictly advancing between
+    // polls. Autoplay-blocked contexts pause the video within a second or
+    // two, so a full 4s streak is strong ground truth. Any hiccup resets
+    // the streak.
     var faded = false;
+    var streak = 0;
+    var lastPaused = null;
+    var lastTime = -1;
+    var poll = null;
     function fade() {
       if (faded) return;
       faded = true;
+      if (poll) { clearInterval(poll); poll = null; }
       poster.style.opacity = '0';
       setTimeout(function () { if (poster.parentNode) poster.parentNode.removeChild(poster); }, 500);
       window.removeEventListener('message', onMsg);
     }
+    function bump(paused, time) {
+      var advancing = time > lastTime + 0.05;
+      if (paused === false && advancing) {
+        streak++;
+        if (streak >= 4) fade();
+      } else {
+        streak = 0;
+      }
+      lastTime = time;
+      lastPaused = paused;
+    }
     function onMsg(e) {
       if (!/vimeo\.com/.test(e.origin)) return;
+      if (e.source !== iframe.contentWindow) return;
       var data = e.data;
       try { if (typeof data === 'string') data = JSON.parse(data); } catch (err) { return; }
-      if (data && (data.event === 'play' || data.event === 'playing')) fade();
+      if (!data) return;
+      if (data.method === 'getPaused') lastPaused = data.value;
+      else if (data.method === 'getCurrentTime' && typeof data.value === 'number') {
+        // Pair the freshest `getPaused` with this time reading.
+        bump(lastPaused, data.value);
+      }
     }
     window.addEventListener('message', onMsg);
 
-    // Subscribe to Vimeo's play events. Post once the iframe reports ready.
+    // Subscribe: set loop:true as insurance (Vimeo's URL `loop` param is
+    // ignored for some clip types — the JS API is the reliable path), then
+    // poll getPaused + getCurrentTime every second. Ordering matters — ask
+    // for paused first so `lastPaused` is fresh when the time reply arrives.
     function subscribe() {
       try {
-        iframe.contentWindow.postMessage({ method: 'addEventListener', value: 'play' }, '*');
+        iframe.contentWindow.postMessage({ method: 'setLoop', value: true }, '*');
       } catch (err) { /* cross-origin — silently ignore */ }
+      if (poll) return;
+      poll = setInterval(function () {
+        if (faded) return;
+        try {
+          iframe.contentWindow.postMessage({ method: 'getPaused' }, '*');
+          iframe.contentWindow.postMessage({ method: 'getCurrentTime' }, '*');
+        } catch (err) { /* cross-origin — silently ignore */ }
+      }, 1000);
     }
     if (iframe.contentWindow) subscribe();
     iframe.addEventListener('load', subscribe);
+  }
+
+  function setupAnchorPoster() {
+    setupVimeoPoster('Anchor Player', 'assets/anchor-globe.webp', { forceMuted: false });
+  }
+  function setupCloudPeoplePoster() {
+    setupVimeoPoster('Cloud People', 'assets/cloud-people.webp', { forceMuted: true });
   }
 
   // ---------- Public API ----------
@@ -324,12 +387,38 @@
     });
   }
 
+  // Make the THANK YOU footer a resume-download surface. Clicks anywhere on
+  // the section that reach us trigger a download of assets/BR_Resume2026.pdf.
+  // The edit-mode.js "sign in to edit" easter egg lives in the empty strip
+  // below the "FOR YOUR TIME" heading (capture-phase, stopImmediatePropagation);
+  // our handler runs for every OTHER click in the section.
+  function setupResumeDownload() {
+    var section = document.querySelector('[data-framer-name="v2/Footer"]');
+    if (!section || section.hasAttribute('data-br-resume-wired')) return;
+    section.setAttribute('data-br-resume-wired', '');
+    section.style.cursor = 'pointer';
+    section.setAttribute('aria-label', 'Download Brett Red resume (PDF)');
+
+    function trigger() {
+      var a = document.createElement('a');
+      a.href = 'assets/BR_Resume2026.pdf';
+      a.download = 'BR_Resume2026.pdf';
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+    section.addEventListener('click', trigger);
+  }
+
   function init() {
     injectMissingChips();
     tagCards();
     fixDroppedCards();
     setupResponsiveColumns();
     setupAnchorPoster();
+    setupCloudPeoplePoster();
+    setupResumeDownload();
   }
 
   if (document.readyState === 'loading') {
@@ -345,6 +434,9 @@
     fixDroppedCards: fixDroppedCards,
     setupResponsiveColumns: setupResponsiveColumns,
     setupAnchorPoster: setupAnchorPoster,
+    setupCloudPeoplePoster: setupCloudPeoplePoster,
+    setupVimeoPoster: setupVimeoPoster,
+    setupResumeDownload: setupResumeDownload,
     list: listCards
   };
 })();

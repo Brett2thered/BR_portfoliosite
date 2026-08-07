@@ -434,6 +434,14 @@
     function open(e) {
       if (document.documentElement.classList.contains('br-edit-on')) return;
       if (isOverLink(e.target)) return;
+      // Restrict the easter egg to the empty strip BELOW the "FOR YOUR TIME"
+      // heading. Clicks on the headline text or the shader area fall through
+      // so the resume-download handler in theme.js can respond. Without this
+      // scope, the whole footer opens the modal and swallows every other
+      // click via stopImmediatePropagation below.
+      var heading = footer.querySelector('[data-framer-name="FOR YOUR TIME"]')
+        || footer.querySelector('[data-framer-name="THANK YOU"]');
+      if (heading && e.clientY < heading.getBoundingClientRect().bottom) return;
       e.preventDefault();
       e.stopPropagation();
       if (e.stopImmediatePropagation) e.stopImmediatePropagation();

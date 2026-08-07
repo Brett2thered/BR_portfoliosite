@@ -196,7 +196,14 @@
 
     if (reduceMotion) return; // static frame, no animation loop
 
-    // Pause when the footer is scrolled out of view.
+    // Kick the animation off eagerly if the canvas is on-screen right now,
+    // rather than waiting for IntersectionObserver's first callback: some
+    // contexts (backgrounded tabs, previews, iframes) throttle or gate IO on
+    // document visibility, and without this the shader was drawing one frame
+    // at init and never entering its rAF loop.
+    if (!document.hidden && isOnScreen()) start();
+
+    // IO still handles pause/resume as the footer scrolls in and out of view.
     if ("IntersectionObserver" in window) {
       var io = new IntersectionObserver(
         function (entries) {
@@ -206,8 +213,6 @@
         { threshold: 0 }
       );
       io.observe(canvas);
-    } else {
-      start();
     }
 
     // Pause when the tab is hidden.

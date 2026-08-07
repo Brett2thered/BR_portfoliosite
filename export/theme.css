@@ -103,6 +103,34 @@
   }
 }
 
+/* Anchor Maps on mobile — same problem as >=2633, symmetric fix. Framer's
+   <834 base rule pins the card to height:395px and the embed to height:406px
+   IN FLOW, which:
+   1. Overflows the card by 11px (clipped, wastes vertical space).
+   2. Renders the video at 350×406 — a portrait aspect the video wasn't
+      authored for — so the globe illustration appears small with visible
+      white margins baked in from the source frame.
+   Other cards (Cloud People, Brett Video) don't have this because their
+   videos ARE authored for portrait, and they use a Container wrapper that
+   Anchor Player's Framer component lacks. Apply the same aspect-ratio +
+   absolute-bleed pattern the 1680+ breakpoints already use: card height
+   tracks width, embed sits absolute with a 5% bleed and 15/16px overhang,
+   card's overflow:hidden clips the bleed cleanly to the 10px radius. */
+@media (max-width: 833.98px) {
+  [data-framer-name="Anchor Player"] {
+    aspect-ratio: 0.98125 !important;
+    height: auto !important;
+  }
+  [data-framer-name="Anchor Player"] .framer-19gyy1y-container {
+    position: absolute !important;
+    top: -15px !important;
+    bottom: -16px !important;
+    left: -2.63876% !important;
+    width: 105% !important;
+    height: unset !important;
+  }
+}
+
 /* ==========================================================================
    Text cards — shared, card-responsive, left-aligned typography
    --------------------------------------------------------------------------
@@ -259,6 +287,26 @@
   [data-framer-name="Column Container"] {
     max-width: 440px !important;
     margin-inline: auto !important;
+  }
+}
+
+/* ==========================================================================
+   Ranked Designer (Stats "1%") — vertical centering below md
+   --------------------------------------------------------------------------
+   Framer positions the card's inner Content block at `top: 42px` with the
+   card locked to 348px tall. At desktop the "1%" number is scaled to ~67px
+   so the content fills to within ~51px of the bottom edge — visually
+   balanced. Below md the number drops to its 40px floor (clamp), the
+   Content block shrinks to ~209px, and the empty margin at the bottom
+   balloons to ~97px, so the card reads top-heavy next to Meta and other
+   full-bleed neighbours in the mobile stack. Centre the Content block
+   vertically at ≤md so the whitespace is split evenly. */
+@media (max-width: 833.98px) {
+  /* :not() excludes the chip's inner Content wrapper (same data-framer-name),
+     whose Framer-authored transform compensates for line-box centering. */
+  [data-framer-name="Ranked Designer"] [data-framer-name="Content"]:not([data-framer-name="Text Chip"] *) {
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
   }
 }
 
