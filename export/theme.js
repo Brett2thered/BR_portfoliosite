@@ -124,15 +124,11 @@
     return { tagged: tagged, untagged: untagged };
   }
 
-  // ---------- Fix cards dropped at certain breakpoints ----------
-  // Framer's responsive design is left intact: 1 column on phones, 2 on
-  // tablet, 3 on desktop. The bug was the ultra-wide (>=2633px) layout, which
-  // hid 21 of the 25 cards via the `hidden-b5hu3r` class — that class only
-  // sets display:none at >=2633px, so stripping it from the cards makes
-  // ultra-wide match the 3-column desktop layout while leaving the phone and
-  // tablet curation (driven by other classes) untouched. We also hide the one
-  // duplicate card variant (Levels ships a second copy that renders twice in
-  // the 1728-2632px range).
+  // ---------- Restore every project at every layout ----------
+  // Framer's tablet export hides both Column 3 and selected cards with
+  // `hidden-7pcg6j`; its ultra-wide export also hides most cards with
+  // `hidden-b5hu3r`. The portfolio should keep a complete project list at
+  // every breakpoint, so layout code below changes columns—not content.
   function fixDroppedCards() {
     var cols = document.querySelectorAll('[data-framer-name="Column 1"], [data-framer-name="Column 2"], [data-framer-name="Column 3"]');
     var seen = {};
@@ -145,12 +141,16 @@
         if (id && seen[id]) { child.style.display = 'none'; return; } // duplicate variant -> hide everywhere
         if (id) seen[id] = true;
         child.classList.remove('hidden-b5hu3r');
+        child.classList.remove('hidden-7pcg6j');
+        child.classList.remove('hidden-yjk9vg');
         root.classList.remove('hidden-b5hu3r');
+        root.classList.remove('hidden-7pcg6j');
+        root.classList.remove('hidden-yjk9vg');
       });
     });
   }
 
-  // ---------- Large-display 4th column (>=2560px) ----------
+  // ---------- Responsive project columns ----------
   // The masonry ships as three equal flex columns (each flex:1 0 0, so N
   // visible columns split the row into N equal tracks). Framer hides columns
   // 2/3 on phones/tablets; from 1680px up all three show, which on a 27" QHD /
@@ -161,6 +161,8 @@
   // three-column layout below the threshold. Card nodes are MOVED, never
   // cloned, so the hover wrapper, shine overlay, Motion hover listeners and
   // data-br tags added by the other runtime scripts travel with each card.
+  var TWO_COL_MIN = 834;
+  var THREE_COL_MIN = 1024;
   var FOUR_COL_MIN = 2560;
   var col4 = null;
   var origOrder = null; // [{node, parent}] in authored order, for exact 3-col restore
@@ -176,6 +178,12 @@
     var fn = node.getAttribute('data-framer-name') || '';
     if (fn.indexOf('Column') === 0) return false;       // nested column stack, not a card
     return !!(node.offsetWidth || node.offsetHeight);    // excludes display:none duplicates/curation
+  }
+
+  function isLayoutCard(node) {
+    if (node.nodeType !== 1 || node.style.display === 'none') return false;
+    var fn = node.getAttribute('data-framer-name') || '';
+    return fn.indexOf('Column') !== 0;
   }
 
   function recordOriginal() {
@@ -232,17 +240,39 @@
     });
   }
 
+  function applyTwo() {
+    var cols = baseColumns().slice(0, 2);
+    if (cols.length < 2 || !origOrder) return;
+
+    // At tablet widths Column 3 is intentionally hidden by Framer. Move every
+    // non-duplicate project into the two visible columns in authored order so
+    // the project list remains complete without creating a third narrow track.
+    var cards = origOrder
+      .map(function (rec) { return rec.node; })
+      .filter(isLayoutCard);
+
+    cards.forEach(function (node, index) {
+      cols[index % 2].appendChild(node);
+    });
+  }
+
   function setupResponsiveColumns() {
     if (baseColumns().length < 3) return;  // page has no masonry — no-op
     recordOriginal();
-    var mq = window.matchMedia('(min-width: ' + FOUR_COL_MIN + 'px)');
+    var twoColumn = window.matchMedia(
+      '(min-width: ' + TWO_COL_MIN + 'px) and (max-width: ' + (THREE_COL_MIN - 0.02) + 'px)'
+    );
+    var fourColumn = window.matchMedia('(min-width: ' + FOUR_COL_MIN + 'px)');
     function sync() {
       restoreThree();                      // canonical 3-col base (idempotent)
-      if (mq.matches) applyFour();
+      if (twoColumn.matches) applyTwo();
+      else if (fourColumn.matches) applyFour();
     }
     sync();
-    if (mq.addEventListener) mq.addEventListener('change', sync);
-    else if (mq.addListener) mq.addListener(sync); // Safari < 14
+    [twoColumn, fourColumn].forEach(function (query) {
+      if (query.addEventListener) query.addEventListener('change', sync);
+      else if (query.addListener) query.addListener(sync); // Safari < 14
+    });
   }
 
   // ---------- Vimeo poster fallback ----------

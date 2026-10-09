@@ -40,6 +40,27 @@
   }
 }
 
+/* ==========================================================================
+   Desktop and tablet project coverage
+   --------------------------------------------------------------------------
+   The exported 834–1679px breakpoint fixes the entire page at 834px wide,
+   hides Column 3, and suppresses several cards. A normal laptop browser is
+   therefore presented as a partial two-column portfolio. Keep three fluid
+   columns from 1024px upward; the runtime rebalances the complete list into
+   two columns between 834px and 1023.98px.
+   ========================================================================== */
+@media (min-width: 1024px) and (max-width: 1679.98px) {
+  .framer-zDC2I.framer-b5hu3r {
+    width: 100% !important;
+    max-width: 1680px;
+    margin-inline: auto;
+  }
+
+  [data-framer-name="Column 3"].hidden-7pcg6j {
+    display: flex !important;
+  }
+}
+
 /* ---- Large-display: inner content of embed/mockup cards must scale ----
    Framer's >=2633px variant sizes some cards' INNER content with fixed pixels
    authored for a wider layout. In the 4-column layout (narrower cards) that
@@ -309,4 +330,3 @@
     transform: translate(-50%, -50%) !important;
   }
 }
-
