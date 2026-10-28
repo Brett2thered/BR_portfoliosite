@@ -156,8 +156,14 @@
       "transform-origin:center center;" +
       "display:inherit;flex-direction:inherit;flex-wrap:inherit;justify-content:inherit;" +
       "align-items:inherit;align-content:inherit;gap:inherit;";
-    while (el.firstChild) wrap.appendChild(el.firstChild);
-    el.appendChild(wrap);
+    // Loading overlays belong to the card shell, not the zoomed content.
+    // Keeping them out of the wrapper also prevents absolute skeletons from
+    // changing the padded-card geometry check below.
+    Array.prototype.slice.call(el.childNodes).forEach(function (child) {
+      if (child.nodeType === 1 && child.classList.contains('br-card-ghost')) return;
+      wrap.appendChild(child);
+    });
+    el.insertBefore(wrap, el.firstChild);
 
     // Self-check: cards sized intrinsically (fixed px or Framer's
     // aspect-ratio trick, where height:100% resolves against auto and

@@ -26,7 +26,8 @@
     { id: 14, name: 'Levels',             framerName: 'Levels' },
     { id: 15, name: 'Triton Sub',         framerName: 'Triton Player' },
     { id: 16, name: 'Resident Designer',  framerName: 'Resident Designer Video' },
-    { id: 17, name: 'Hiro',               framerName: 'Hiro' },
+    { id: 17, name: 'patchworks',         framerName: 'patchworks' },
+    { id: 18, name: '1PRM',               framerName: 'New Project' },
     { id: 19, name: 'Doc.ai',             framerName: 'Doc.ai' },
     { id: 20, name: 'Cloud People',       framerName: 'Cloud People' },
     { id: 21, name: 'Education',          framerName: 'Education Card' },
@@ -164,6 +165,12 @@
   var TWO_COL_MIN = 834;
   var THREE_COL_MIN = 1024;
   var FOUR_COL_MIN = 2560;
+  // Opening projects follow the requested mobile sequence. The rest alternate
+  // work, references and stats in a stable order rather than shuffling on load.
+  var MOBILE_CARD_ORDER = [
+    1, 3, 20, 2, 18, 9, 14, 25, 19,
+    4, 5, 8, 7, 12, 15, 6, 11, 17, 13, 16, 23, 26, 24, 21, 10, 22
+  ];
   var col4 = null;
   var origOrder = null; // [{node, parent}] in authored order, for exact 3-col restore
 
@@ -201,7 +208,12 @@
     // Re-append every original child to its original column in authored order;
     // appendChild moves the node, so iterating in document order rebuilds the
     // exact three-column DOM (including the hidden duplicate variant).
-    origOrder.forEach(function (rec) { rec.parent.appendChild(rec.node); });
+    origOrder.forEach(function (rec) {
+      rec.node.removeAttribute('data-br-mobile-order');
+      rec.parent.appendChild(rec.node);
+    });
+    var container = origOrder[0] && origOrder[0].parent.parentNode;
+    if (container) container.removeAttribute('data-br-mobile-stack');
     if (col4 && col4.parentNode) col4.parentNode.removeChild(col4);
     col4 = null;
   }
@@ -256,20 +268,40 @@
     });
   }
 
+  function applyMobile() {
+    var column = colByName('Column 1');
+    if (!column || !origOrder) return;
+    var cards = origOrder.map(function (rec) { return rec.node; }).filter(isLayoutCard);
+    cards.sort(function (a, b) {
+      var aRank = MOBILE_CARD_ORDER.indexOf(Number(a.getAttribute('data-br-id')));
+      var bRank = MOBILE_CARD_ORDER.indexOf(Number(b.getAttribute('data-br-id')));
+      return (aRank < 0 ? MOBILE_CARD_ORDER.length : aRank) -
+        (bRank < 0 ? MOBILE_CARD_ORDER.length : bRank);
+    });
+    column.parentNode.setAttribute('data-br-mobile-stack', '');
+    cards.forEach(function (card, index) {
+      card.setAttribute('data-br-mobile-order', String(index));
+      column.appendChild(card);
+    });
+    // Thank You is outside the project columns and remains the final card.
+  }
+
   function setupResponsiveColumns() {
     if (baseColumns().length < 3) return;  // page has no masonry — no-op
     recordOriginal();
+    var mobile = window.matchMedia('(max-width: ' + (TWO_COL_MIN - 0.02) + 'px)');
     var twoColumn = window.matchMedia(
       '(min-width: ' + TWO_COL_MIN + 'px) and (max-width: ' + (THREE_COL_MIN - 0.02) + 'px)'
     );
     var fourColumn = window.matchMedia('(min-width: ' + FOUR_COL_MIN + 'px)');
     function sync() {
       restoreThree();                      // canonical 3-col base (idempotent)
-      if (twoColumn.matches) applyTwo();
+      if (mobile.matches) applyMobile();
+      else if (twoColumn.matches) applyTwo();
       else if (fourColumn.matches) applyFour();
     }
     sync();
-    [twoColumn, fourColumn].forEach(function (query) {
+    [mobile, twoColumn, fourColumn].forEach(function (query) {
       if (query.addEventListener) query.addEventListener('change', sync);
       else if (query.addListener) query.addListener(sync); // Safari < 14
     });
@@ -448,6 +480,8 @@
     setupResponsiveColumns();
     setupAnchorPoster();
     setupCloudPeoplePoster();
+    setupVimeoPoster('Brett Player', 'assets/brett-video-poster.jpg', { forceMuted: false });
+    setupVimeoPoster('Triton Player', 'assets/triton-poster.jpg', { forceMuted: false });
     setupResumeDownload();
   }
 
