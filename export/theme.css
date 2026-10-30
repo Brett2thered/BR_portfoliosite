@@ -3,59 +3,78 @@
    Layered on top of Framer's generated CSS.
    ========================================================================== */
 
+/* ---- Masonry spacing: one gutter at every breakpoint ----
+   Framer gives Column 1 (and its wide-screen clone) a 15px gap, the other
+   columns 20px, and the page stack 25px on desktop. Keep the outer padding,
+   horizontal gutters, vertical card gaps and final footer gap on one token.
+   Do not distribute spare column height between cards. */
+.framer-zDC2I.framer-b5hu3r {
+  --br-card-gap: 20px;
+  padding: var(--br-card-gap) !important;
+  gap: var(--br-card-gap) !important;
+}
+
+/* This legacy, background-colored intro was still an in-flow flex item,
+   adding an invisible text row plus a gutter above every column. Preserve
+   its text without letting it alter the visible grid's outer padding. */
+.framer-zDC2I.framer-b5hu3r > .framer-14b0jhc {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+
+[data-framer-name="Column Container"] {
+  gap: var(--br-card-gap, 20px) !important;
+  align-items: flex-start !important;
+}
+
+[data-framer-name="Column Container"] > :is(
+  [data-framer-name="Column 1"],
+  [data-framer-name="Column 2"],
+  [data-framer-name="Column 3"],
+  [data-framer-name="Column 4"]
+) {
+  gap: var(--br-card-gap, 20px) !important;
+  padding-block: 0 !important;
+  justify-content: flex-start !important;
+}
+
+/* The embedded media defines these cards' visible edges. Fixed desktop
+   shell heights left blank space below narrower videos (or cropped wider
+   ones), making a 20px layout gap look much larger. Use the source aspect
+   ratios and fill the shell at every width, as the mobile layout already did. */
+[data-framer-name="Triton Player"] {
+  aspect-ratio: 0.941781 !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+[data-framer-name="Cloud People"] {
+  aspect-ratio: 1.00274 !important;
+  height: auto !important;
+}
+[data-framer-name="Cloud People"] .framer-j71io8 {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+[data-framer-name="Triton Player"] .framer-18rqqkd-container,
+[data-framer-name="Cloud People"] .framer-14nrf4c-container {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto !important;
+  transform: none !important;
+}
+
 /* ---- Text Chip: frosted-glass pill ---- */
-/* Media placeholders reserve the existing card geometry. Only the shimmer
-   moves; the card and the loaded content never shift during the reveal. */
-.br-card-ghost {
-  position: absolute;
-  inset: 0;
-  z-index: 25;
-  display: block;
-  overflow: hidden;
-  border-radius: inherit;
-  background: #e3e5e5;
-  pointer-events: none;
-  opacity: 1;
-  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.br-card-ghost::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 25%, #ffffff70 50%, transparent 75%);
-  transform: translateX(-100%);
-  animation: br-ghost-shimmer 1.8s ease-in-out infinite;
-}
-.br-ghost-chip, .br-ghost-art, .br-ghost-line {
-  position: absolute;
-  display: block;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #eff0f0;
-}
-.br-ghost-chip { top: 30px; width: 84px; height: 34px; border-radius: 30px; }
-.br-ghost-art { top: 35%; width: 38%; height: 27%; border-radius: 12px; }
-.br-ghost-line { top: 72%; width: 58%; height: 8px; border-radius: 8px; }
-.br-ghost-line--short { top: calc(72% + 18px); width: 38%; }
-.br-ghost-error { display: none; }
-.br-card-ghost--avatar > span { display: none; }
-[data-br-media-state="ready"] > .br-card-ghost,
-[data-br-media-state="ready"] > div > .br-card-ghost { opacity: 0; }
-[data-br-media-state="error"] .br-card-ghost::after { animation: none; display: none; }
-[data-br-media-state="error"] .br-card-ghost > span { display: none; }
-[data-br-media-state="error"] .br-card-ghost > .br-ghost-error {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-content: center;
-  color: #73797b;
-  font: 14px/1.4 sans-serif;
-}
-@keyframes br-ghost-shimmer { to { transform: translateX(100%); } }
-@media (prefers-reduced-motion: reduce) {
-  .br-card-ghost { transition: none; }
-  .br-card-ghost::after { animation: none; display: none; }
-}
 
 [data-framer-name="Text Chip"] {
   /* Soft white glass fill — visible over image cards, near-invisible over white cards */
@@ -328,36 +347,6 @@
   [data-framer-name="THANK YOU"] .framer-text {
     font-size: clamp(56px, 22vw, 110px) !important;
     line-height: 1.0 !important;
-  }
-
-  /* These embeds were given fixed desktop card heights but shorter,
-     independently sized media frames. The unused part of each transparent
-     card looked like a huge gap before the next project. Give the mobile
-     card its media's aspect ratio and let the embed fill the rounded shell. */
-  [data-framer-name="Triton Player"] {
-    aspect-ratio: 0.941781 !important;
-    height: auto !important;
-    min-height: 0 !important;
-  }
-  [data-framer-name="Cloud People"] {
-    aspect-ratio: 1.00274 !important;
-    height: auto !important;
-  }
-  [data-framer-name="Cloud People"] .framer-j71io8 {
-    position: absolute !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 0 !important;
-  }
-  [data-framer-name="Triton Player"] .framer-18rqqkd-container,
-  [data-framer-name="Cloud People"] .framer-14nrf4c-container {
-    position: absolute !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    aspect-ratio: auto !important;
-    transform: none !important;
   }
 
   /* The mobile DOM is one ordered stack. Suppress Framer's desktop order

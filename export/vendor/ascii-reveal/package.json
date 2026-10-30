@@ -1,0 +1,8 @@
+{
+  "name": "ascii-reveal",
+  "version": "0.3.0",
+  "type": "module",
+  "license": "MIT",
+  "source": "https://github.com/quanhoangindex/ascii-reveal",
+  "sourceCommit": "f602e204232d2d31de2b67c66a166bcdbde51602"
+}

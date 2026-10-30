@@ -1,5 +1,4 @@
-/* Tiny, dependency-free loading states. Runs in the head so parser-created
- * cards receive their placeholders before the page's first painted frame. */
+/* Homepage media readiness. ascii-loaders.js owns the shared visual layer. */
 (function () {
   'use strict';
 
@@ -84,20 +83,18 @@
     if (!media.length && !poster) return;
     tracked.add(card);
 
+    var preview;
     var avatar = card.getAttribute('data-framer-name') === 'Image of Reference';
     card.setAttribute('data-br-media-state', 'loading');
     card.setAttribute('aria-busy', 'true');
-    var ghost = document.createElement('div');
-    ghost.className = 'br-card-ghost' + (avatar ? ' br-card-ghost--avatar' : '');
-    ghost.setAttribute('aria-hidden', 'true');
-    ghost.innerHTML = '<span class="br-ghost-chip"></span><span class="br-ghost-art"></span>' +
-      '<span class="br-ghost-line"></span><span class="br-ghost-line br-ghost-line--short"></span>' +
-      '<span class="br-ghost-error">Preview unavailable</span>';
-    card.appendChild(ghost);
+    var visual = window.BRAscii && window.BRAscii.create(card, {
+      avatar: avatar,
+      source: function () { return preview || card.querySelector('img, video'); }
+    });
 
     var tasks;
     if (poster) {
-      var preview = new Image();
+      preview = new Image();
       preview.src = poster;
       tasks = [imageReady(preview)];
     } else {
@@ -111,7 +108,7 @@
       var success = ready.every(Boolean);
       card.setAttribute('aria-busy', 'false');
       card.setAttribute('data-br-media-state', success ? 'ready' : 'error');
-      if (success) setTimeout(function () { ghost.remove(); }, 240);
+      if (visual) visual.finish(success);
     });
   }
 

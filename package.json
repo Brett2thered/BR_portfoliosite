@@ -4,9 +4,16 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "test:ascii": "node scripts/check-ascii-loaders.mjs",
+    "test:ascii-colors": "node scripts/check-ascii-colors.mjs",
+    "test:spacing": "node scripts/check-column-spacing.mjs",
+    "preview": "python3 -m http.server 4173 --bind 127.0.0.1 --directory export",
     "analytics": "node scripts/inject-ga.mjs",
     "sitemap": "node scripts/generate-sitemap.mjs",
-    "prepublishOnly": "npm run analytics && npm run sitemap"
+    "ascii-assets": "node scripts/build-ascii-assets.mjs",
+    "media-posters": "node scripts/build-media-posters.mjs",
+    "prepublishOnly": "npm run analytics && npm run ascii-assets && npm run media-loaders && npm run sitemap",
+    "media-loaders": "node scripts/inject-media-loaders.mjs"
   },
   "keywords": [],
   "author": "",

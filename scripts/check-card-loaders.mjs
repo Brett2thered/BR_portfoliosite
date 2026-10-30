@@ -41,7 +41,7 @@ for (const [name, type] of Object.entries({ chromium, webkit })) {
       assert.equal(await page.locator(`[data-framer-name="${card}"]`).getAttribute('data-br-media-state'), 'loading', `${name}: ${card} must have a skeleton while media is held`);
     }
     assert.equal(await page.locator('[data-br-name="Intro"] .br-card-ghost').count(), 0, 'Text must be visible immediately');
-    assert.equal(await page.locator('.br-card-ghost').first().evaluate((ghost) => getComputedStyle(ghost).pointerEvents), 'none');
+    assert.equal(await page.locator('.br-ascii-panel').first().evaluate((ghost) => getComputedStyle(ghost).pointerEvents), 'none');
     await page.screenshot({ path: join(outputDir, `${name}-loading.png`) });
 
     release();
@@ -69,8 +69,9 @@ for (const [name, type] of Object.entries({ chromium, webkit })) {
     const cloud = reduced.locator('[data-framer-name="Cloud People"]');
     await reduced.waitForFunction(() => document.querySelector('[data-framer-name="Cloud People"]').dataset.brMediaState === 'error');
     assert.equal(await cloud.getAttribute('aria-busy'), 'false', 'Failed media must stop loading');
-    assert.equal(await cloud.locator('.br-card-ghost').evaluate((ghost) => getComputedStyle(ghost, '::after').animationName), 'none');
-    assert.equal(await cloud.locator('.br-ghost-error').isVisible(), true, 'Failed previews must have a clean fallback');
+    const errorPanel = reduced.locator('.br-ascii-panel[data-br-ascii-for="Cloud People"]');
+    assert.equal(await errorPanel.locator('canvas').count(), 0, 'Reduced motion/error must not animate');
+    assert.equal(await errorPanel.locator('.br-ascii-error').isVisible(), true, 'Failed previews must have a clean fallback');
     console.log(`${name}: loading placeholders, loaded media reveal, stable layout, reduced motion and failure fallback passed`);
   } finally {
     await browser.close();
