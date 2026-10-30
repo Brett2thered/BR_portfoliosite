@@ -25,6 +25,10 @@
         }
       ],
       "destination": "/api/home-markdown"
+    },
+    {
+      "source": "/anthem",
+      "destination": "/anthem.html"
     }
   ]
 }

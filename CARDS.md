@@ -21,9 +21,9 @@ Numbering is reading order: Column 1 top→bottom, then Column 2, then Column 3.
 | 2 | **Brett Player** | — | — | (video) | Intro video, no chip/link |
 | 3 | **Anchor Player** | Maps | Anchor Maps (App Store) | (video) | Anchor Maps app promo video |
 | 4 | **Arya Works** | Work | aryahealth.ai | `img_1.png` | Arya Health |
-| 5 | **Reference Card** | Reference | — | `img_0.jpg` | Testimonial — **Abdullah** |
+| 5 | **Reference Card** | Reference | linkedin.com/in/mrshakur | `img_0.jpg` | Testimonial — **Abdullah** |
 | 6 | **Ranked Designer** | Stats | — | — | Stat: "top 1% of Designers" (AngelList/Wellfound) |
-| 7 | **Navdy** | Work | — | `img_6.png` | Navdy |
+| 7 | **Navdy** | Work | youtu.be/pKL4PJICS40 | `img_6.png` | Navdy |
 | 8 | **Intel** | Work | — | `img_4.png` | Intel |
 
 ## Column 2
@@ -51,9 +51,9 @@ Numbering is reading order: Column 1 top→bottom, then Column 2, then Column 3.
 | 22 | **Stats w/ Dark Stars** | Stats | — | — | Stat: "highest ranked AR app in the Apple App Store" |
 | 23 | **Reference Card** | Reference | linkedin.com/in/tedgoldstein | `img_21.png` | Testimonial — **Ted Goldstein** |
 | 24 | **Education Card** | Hello | — | `img_18.png` | chip "Hello" looks mislabeled (vs "Education") |
-| 25 | **Anthem** | Work | — | `img_22.jpg` | Anthem |
+| 25 | **Anthem** | Work | anthem.html | `img_22.jpg` | Anthem / Health OS case study |
 | 26 | **TedX** | Public Speaking | youtu.be/yFmuxjGLdQI | `img_19.png` | TEDx talk |
-| 27 | **Wonder** | Work | makewonder.com | `img_23.png` | Wonder Workshop |
+| 27 | **Wonder** | Work | makewonder.com/dash/ | `img_23.png` | Wonder Workshop |
 
 ---
 
