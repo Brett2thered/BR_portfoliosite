@@ -1,0 +1,42 @@
+[
+  {
+    "source": "Animation01.gif",
+    "video": "animation-01.mp4",
+    "poster": "animation-01-poster.jpg",
+    "width": 800,
+    "height": 800,
+    "duration": 10.42,
+    "sourceBytes": 20855409,
+    "videoBytes": 226580
+  },
+  {
+    "source": "Animation02.gif",
+    "video": "animation-02.mp4",
+    "poster": "animation-02-poster.jpg",
+    "width": 800,
+    "height": 800,
+    "duration": 7,
+    "sourceBytes": 13347328,
+    "videoBytes": 322528
+  },
+  {
+    "source": "Animation03.gif",
+    "video": "animation-03.mp4",
+    "poster": "animation-03-poster.jpg",
+    "width": 800,
+    "height": 800,
+    "duration": 16.6,
+    "sourceBytes": 20780729,
+    "videoBytes": 357853
+  },
+  {
+    "source": "Animation05.gif",
+    "video": "animation-05.mp4",
+    "poster": "animation-05-poster.jpg",
+    "width": 800,
+    "height": 800,
+    "duration": 9.4,
+    "sourceBytes": 6639248,
+    "videoBytes": 244201
+  }
+]

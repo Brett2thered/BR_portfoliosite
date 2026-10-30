@@ -8,6 +8,8 @@
     "test:ascii-colors": "node scripts/check-ascii-colors.mjs",
     "test:spacing": "node scripts/check-column-spacing.mjs",
     "test:anthem": "node scripts/check-anthem-page.mjs",
+    "test:intel": "node scripts/check-intel-page.mjs",
+    "intel-assets": "node scripts/build-intel-assets.mjs",
     "preview": "python3 -m http.server 4173 --bind 127.0.0.1 --directory export",
     "analytics": "node scripts/inject-ga.mjs",
     "card-links": "node scripts/inject-card-links.mjs",

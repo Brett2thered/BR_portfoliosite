@@ -24,7 +24,7 @@ Numbering is reading order: Column 1 top→bottom, then Column 2, then Column 3.
 | 5 | **Reference Card** | Reference | linkedin.com/in/mrshakur | `img_0.jpg` | Testimonial — **Abdullah** |
 | 6 | **Ranked Designer** | Stats | — | — | Stat: "top 1% of Designers" (AngelList/Wellfound) |
 | 7 | **Navdy** | Work | youtu.be/pKL4PJICS40 | `img_6.png` | Navdy |
-| 8 | **Intel** | Work | — | `img_4.png` | Intel |
+| 8 | **Intel** | Work | intel.html | `img_4.png` | Intel / GE energy-saving animation campaign |
 
 ## Column 2
 

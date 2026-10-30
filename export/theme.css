@@ -76,9 +76,10 @@
 
 /* ---- Text Chip: frosted-glass pill ---- */
 
-/* Anthem is now a native link to its case study; keep its chip and imagery
+/* Native case-study links keep their chip and imagery
    visually identical to the original non-link card. */
-a[data-framer-name="Anthem"] {
+a[data-framer-name="Anthem"],
+a[data-framer-name="Intel"] {
   color: inherit;
   text-decoration: none;
 }

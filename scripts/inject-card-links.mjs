@@ -29,6 +29,13 @@ const links = [
     url: 'https://www.makewonder.com/dash/',
     label: 'Explore Dash at Wonder Workshop (opens in a new tab)',
   },
+  {
+    name: 'Intel',
+    pattern: /<(?:a|div)\b[^>]*\bdata-framer-name="Intel"[^>]*>/g,
+    url: 'intel.html',
+    label: 'Read the Intel energy-saving animation project',
+    target: '_self',
+  },
 ];
 let updated = html;
 for (const { name, pattern, url, label, target = '_blank' } of links) {
@@ -36,7 +43,7 @@ for (const { name, pattern, url, label, target = '_blank' } of links) {
   if (matches.length !== 1) throw Error(`Expected exactly one ${name} card`);
   const tag = matches[0][0];
   if (/^<div\b/.test(tag)) {
-    // Anthem was exported as a non-link DIV. Convert its matching closing
+    // Some cards were exported as non-link DIVs. Convert the matching closing
     // tag as well, without rebuilding or inserting anything inside the card.
     const contentStart = matches[0].index + tag.length;
     let depth = 1, closing;
