@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 const [source, hero] = process.argv.slice(2);
 if (!source || !hero) throw Error('Provide the guided-flow HTML and hero screenshot paths');
 let html = await readFile(source, 'utf8');
+const timelineCss = await readFile(new URL('templates/medicare-timeline.css', import.meta.url), 'utf8');
 if (!html.includes('const FLOW = {') || !html.includes('id="track"')) throw Error('Unexpected Medicare prototype structure');
 const banner = '<div class="gov-banner" role="note"><strong>Portfolio prototype</strong><span>Sample data only · Not a government service</span></div>';
 html = html.replace(/<div class="gov-banner">[\s\S]*?<\/div>/, banner);
@@ -27,13 +28,12 @@ html = html.replace('</style>', `
   .header-actions { margin-left:auto; }
   .gov-banner { padding:10px 12px; font-size:11px; }
   .canvas-inner { padding-inline:12px; }
-  .track { padding-left:18px; }
-  .node::before { left:-19px; }
   .q-card { padding:18px 12px; }
   .answer-card { flex-wrap:wrap; }
   .answer-card .body { flex:1 1 100px; }
 }
 @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+${timelineCss}
 </style>`);
 html = html.replace('<div class="track" id="track">', '<p class="portfolio-notice">Interactive design prototype. Plans, prices, and guidance are illustrative—not medical, insurance, or enrollment advice. Use fictional answers. No application is submitted.</p><div class="track" id="track">');
 html = html.replace('<div class="track" id="track"></div>', '<div class="track" id="track"></div><noscript><p>This interactive prototype needs JavaScript. <a href="../../medicare.html">Read the project case study</a>.</p></noscript>');

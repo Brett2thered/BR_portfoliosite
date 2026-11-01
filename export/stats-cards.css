@@ -1,0 +1,51 @@
+/* Native text/CSS stats. Size against each card, not the browser viewport. */
+.br-stat-card {
+  position: relative; display: block; flex: none; width: 100%; height: auto;
+  container-type: inline-size; overflow: hidden; border-radius: 10px;
+  background: #fcfcfc; color: #34434b;
+  font-family: "Manrope", "Helvetica Neue", sans-serif;
+  font-kerning: normal;
+}
+.br-stat-shell {
+  display: flex; flex-direction: column; align-items: center;
+  min-block-size: clamp(20rem, 78cqi, 27rem);
+  padding: min(clamp(1.5rem, 6cqi, 3rem), 8cqi); gap: 1.5rem;
+}
+.br-stat-chip {
+  display: inline-block; flex: none; padding: .5em 1.25em;
+  border: 1px solid #e4e7e9; border-radius: 2rem; color: #66717a;
+  font-size: 1rem; font-weight: 400; line-height: 1.25;
+}
+.br-stat-heading {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+.br-stat-core {
+  display: flex; flex: 1 0 auto; width: 100%; min-width: 0;
+  flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem;
+}
+.br-stat-metric { display: flex; flex-direction: column; align-items: center; gap: 1rem; max-width: 100%; }
+.br-stat-value {
+  display: flex; align-items: baseline; justify-content: center; gap: .06em; margin: 0;
+  /* Keep long monetary values on one line when browser text is enlarged;
+     descriptions still follow the full user-selected rem size. */
+  font-size: min(clamp(3rem, calc(.75rem + 14cqi), 7rem), 22cqi); font-weight: 800;
+  line-height: 1.05; letter-spacing: -.055em; font-variant-numeric: lining-nums tabular-nums;
+  white-space: nowrap; text-shadow: none;
+}
+.br-stat-prefix { font-size: .42em; font-weight: 400; letter-spacing: -.025em; }
+.br-stat-suffix { font-size: .58em; letter-spacing: -.04em; }
+[data-stat="capital"] .br-stat-prefix { font-weight: 800; font-size: .55em; }
+[data-stat="rating"] .br-stat-suffix { font-size: .32em; font-weight: 400; color: #68747c; }
+.br-stat-description {
+  width: 100%; max-width: 29ch; margin: 0; text-align: center; text-wrap: pretty;
+  font-size: clamp(1rem, calc(.875rem + .5cqi), 1.125rem); font-weight: 400; line-height: 1.5;
+  color: #54636c; overflow-wrap: break-word;
+}
+.br-stat-stars { display: flex; gap: min(.375rem, 1.5cqi); font-size: min(1.25rem, 7cqi); }
+.br-stat-star {
+  display: block; position: relative; width: 1em; height: 1em; overflow: hidden; background: #d9e0e3;
+  clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 93%, 50% 71%, 21% 93%, 32% 57%, 2% 35%, 39% 35%);
+}
+.br-stat-star::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 100%; background: #546773; }
+.br-stat-star:last-child::before { width: 90%; }

@@ -18,6 +18,15 @@ Numbering is reading order: Column 1 top→bottom, then Column 2, then Column 3.
 - Hero: original `assets/medicare/hero-reference.png`, animated through clipped SVG layers with viewport suspension and reduced-motion support. No pause button or footer caption. Hover/keyboard focus switches to the official National Design Studio wordmark on a monochrome field and pauses hidden motion; the link still opens the Medicare case study.
 - Source template: `scripts/templates/medicare-card.html`; rebuild with `npm run medicare-card` (also runs before publishing).
 - Working prototype: `prototypes/medicare/`, isolated from the portfolio in a sandboxed iframe and clearly marked as sample content.
+- Timeline alignment: `scripts/templates/medicare-timeline.css` is inlined by the prototype builder; dots and connector share one responsive axis. Verify with `npm run test:medicare-timeline` (embedded/standalone, normal/retina densities, answer/reset states).
+
+## Native stats cards
+
+- Ranking, capital, and rating retain runtime IDs **8, 11, 23** and their existing positions/order.
+- Source of truth: the three definitions in `scripts/build-stats-cards.mjs`. Run `npm run stats-cards` to rebuild their static HTML (also runs before publishing).
+- Styling: `export/stats-cards.css`, with card-relative type, intrinsic height, consistent padding, and CSS-only rating stars. No images, SVG, canvas, number shadows, or runtime rendering.
+- Direct preview anchors: `#stats-ranking`, `#stats-capital`, `#stats-rating`.
+- Responsive regression: `npm run test:stats`, including 200% text and no-script/no-image/no-font fallbacks.
 
 ---
 
