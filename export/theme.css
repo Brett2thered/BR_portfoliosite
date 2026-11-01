@@ -37,11 +37,27 @@
   [data-framer-name="Column 1"],
   [data-framer-name="Column 2"],
   [data-framer-name="Column 3"],
-  [data-framer-name="Column 4"]
+  [data-framer-name="Column 4"],
+  [data-framer-name="Column 5"]
 ) {
   gap: var(--br-card-gap, 20px) !important;
   padding-block: 0 !important;
   justify-content: flex-start !important;
+}
+
+/* Editorial order belongs to the outer card wrappers, at EVERY breakpoint.
+   Native stats no longer carry Framer's order classes; legacy cards do.
+   Reset both so the runtime's deterministic DOM order is the visual order. */
+[data-framer-name="Column Container"] > [data-framer-name^="Column "] > * {
+  order: 0 !important;
+}
+[data-framer-name="Column Container"][data-br-column-count] > [data-framer-name^="Column "] {
+  display: flex !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+}
+[data-framer-name="Column Container"][data-br-column-count] > [data-br-inactive-column] {
+  display: none !important;
 }
 
 /* The embedded media defines these cards' visible edges. Fixed desktop
@@ -115,7 +131,8 @@ a[data-framer-name="Intel"] {
   [data-framer-name="Column 1"] > *,
   [data-framer-name="Column 2"] > *,
   [data-framer-name="Column 3"] > *,
-  [data-framer-name="Column 4"] > * {
+  [data-framer-name="Column 4"] > *,
+  [data-framer-name="Column 5"] > * {
     width: 100% !important;
   }
 }

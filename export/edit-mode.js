@@ -10,13 +10,13 @@
   var SESSION_KEY = 'br_edit';
   var CREDS = { user: 'Daddy', pass: 'Baby' };
 
-  // Match Framer's 5 breakpoints (see edit-mode plan)
+  // Match the actual responsive column ranges, not old Framer variants.
   var BREAKPOINTS = [
-    { key: 'xxl', mq: '(min-width: 2633px)' },
-    { key: 'xl',  mq: '(min-width: 1728px) and (max-width: 2632.98px)' },
-    { key: 'lg',  mq: '(min-width: 1680px) and (max-width: 1727.98px)' },
-    { key: 'md',  mq: '(min-width: 834px)  and (max-width: 1679.98px)' },
-    { key: 'sm',  mq: '(max-width: 833.98px)' }
+    { key: 'five',  mq: '(min-width: 3200px)' },
+    { key: 'four',  mq: '(min-width: 2560px)' },
+    { key: 'three', mq: '(min-width: 1024px)' },
+    { key: 'two',   mq: '(min-width: 834px)' },
+    { key: 'one',   mq: '(min-width: 0px)' }
   ];
 
   // Minimum card-like dimensions (px) — anything smaller is treated as a fragment
@@ -50,7 +50,7 @@
     for (var i = 0; i < BREAKPOINTS.length; i++) {
       if (window.matchMedia(BREAKPOINTS[i].mq).matches) return BREAKPOINTS[i].key;
     }
-    return 'md';
+    return 'one';
   }
 
   function isVisible(el) {
@@ -66,6 +66,8 @@
       .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   }
   function stableKey(el) {
+    var id = el.getAttribute('data-br-id');
+    if (id) return 'card-' + id;
     var name = el.getAttribute('data-framer-name');
     if (name) return slug(name);
     var href = el.getAttribute('href');
@@ -88,7 +90,7 @@
     var cards = [];
     var seenKeys = {};
     var fallbackIdx = 0;
-    var columns = $$('[data-framer-name^="Column"]');
+    var columns = $$('[data-framer-name="Column Container"] > [data-framer-name^="Column "]');
     columns.forEach(function (col) {
       if (!isVisible(col)) return;
       Array.prototype.slice.call(col.children).forEach(function (el) {
@@ -136,6 +138,8 @@
   }
 
   function applyOrder(animate) {
+    // Saved editor preferences must never override the public feed on resize.
+    if (!document.documentElement.classList.contains('br-edit-on')) return;
     var bp = state.bp;
     var order = state.storedOrder[bp];
     if (!order) {
@@ -454,28 +458,25 @@
 
   // ---------- Breakpoint watcher ----------
   function watchBreakpoint() {
-    BREAKPOINTS.forEach(function (b) {
-      try {
-        var mql = window.matchMedia(b.mq);
-        var handler = function () {
-          var newBp = detectBreakpoint();
-          if (newBp !== state.bp) {
-            state.bp = newBp;
-            // Re-collect cards (different ones may now be visible)
-            state.cards.forEach(function (c) { c.el.style.transform = ''; c.el.classList.remove('br-card'); c.el.removeAttribute('data-br-card'); });
-            state.cards = collectVisibleCards();
-            snapshotBaselines();
-            applyOrder(false);
-            if (document.documentElement.classList.contains('br-edit-on')) {
-              attachDragHandlers();
-            }
-            updatePill();
-          }
-        };
-        if (mql.addEventListener) mql.addEventListener('change', handler);
-        else mql.addListener(handler);
-      } catch (e) {}
-    });
+    var frame = 0;
+    function refresh() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(function () {
+        state.bp = detectBreakpoint();
+        if (!document.documentElement.classList.contains('br-edit-on')) return;
+        state.cards.forEach(function (c) { c.el.style.transform = ''; c.el.classList.remove('br-card'); c.el.removeAttribute('data-br-card'); });
+        state.cards = collectVisibleCards();
+        snapshotBaselines();
+        applyOrder(false);
+        attachDragHandlers();
+        suppressLinkNav(true);
+        updatePill();
+      });
+    }
+    // Theme emits after moving cards. Measuring before that event produces
+    // stale slots, especially when creating the fourth or fifth column.
+    window.addEventListener('br:layout', refresh);
+    window.addEventListener('resize', refresh);
   }
 
   // ---------- Init ----------

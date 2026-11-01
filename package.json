@@ -8,6 +8,8 @@
     "test:ascii-colors": "node scripts/check-ascii-colors.mjs",
     "test:spacing": "node scripts/check-column-spacing.mjs",
     "test:stats": "node scripts/check-stats-cards.mjs",
+    "test:responsive-layout": "node scripts/check-responsive-layout.mjs",
+    "test:mobile-spacing": "node scripts/check-mobile-spacing.mjs",
     "stats-cards": "node scripts/build-stats-cards.mjs",
     "test:anthem": "node scripts/check-anthem-page.mjs",
     "test:intel": "node scripts/check-intel-page.mjs",

@@ -8,7 +8,7 @@ const outputDir = process.argv[3] || "/private/tmp/br-mobile-spacing";
 const widths = [320, 375, 390, 420, 430, 768, 833];
 const results = [];
 const failures = [];
-const openingOrder = ["Intro", "Brett Video", "Cloud People", "Anchor Maps", "1PRM", "Meta", "Levels", "Anthem", "Doc.ai"];
+const openingOrder = ["Intro", "Brett Video", "Medicare", "1PRM", "Cloud People", "Anchor Maps", "Doc.ai"];
 await mkdir(outputDir, { recursive: true });
 
 for (const [engine, browserType] of Object.entries({ chromium, webkit })) {
@@ -64,9 +64,10 @@ for (const [engine, browserType] of Object.entries({ chromium, webkit })) {
       });
       results.push({ engine, width, ...metrics });
       try {
-        assert.equal(metrics.cards.length, 26, "All 26 unique cards, including Hustle, must remain visible");
-        assert.deepEqual(metrics.cards.slice(0, 9).map((card) => card.name), openingOrder,
-          "The opening nine cards must follow the requested mobile sequence");
+        assert.equal(metrics.cards.length, 27, "All 27 unique cards, including Medicare, must remain visible");
+        assert.deepEqual(metrics.cards.slice(0, 7).map((card) => card.name), openingOrder,
+          "The opening seven cards must follow the fixed mobile sequence");
+        assert.deepEqual(metrics.cards.slice(-3).map((card) => card.name), ['Stat: Ranked', 'Stat: $22.8m', 'Stat: 4.9★'], 'Stats remain last in the feed');
         assert.ok(metrics.footerTop >= metrics.finalProjectBottom, "Thank You must remain after every project");
         assert.equal(metrics.videoRadius, "10px", "Talking video must match the 10px card corners");
         assert.ok(metrics.videoClip.includes("10px"), "Talking video must clip the embedded player to its corners");
@@ -78,7 +79,7 @@ for (const [engine, browserType] of Object.entries({ chromium, webkit })) {
           if (card.media) assert.ok(Object.values(card.media).every((edge) => Math.abs(edge) < 1),
             `${card.name}: media does not fill its card: ${JSON.stringify(card.media)}`);
         }
-        console.log(`${engine} ${width}px: all 26 cards, 20px gaps, 10px corners, media fills cards`);
+        console.log(`${engine} ${width}px: all 27 cards, fixed opening, late stats, 20px gaps, 10px corners, media fills cards`);
       } catch (error) {
         failures.push(`${engine} ${width}px: ${error.message}`);
       }

@@ -5,7 +5,7 @@ import { chromium, webkit } from 'playwright';
 
 const base = process.argv[2] || 'http://127.0.0.1:4173';
 const output = process.argv[3] || '/private/tmp/br-column-spacing';
-const widths = [320, 420, 833, 834, 900, 1023, 1024, 1280, 1440, 1679, 1680, 1920, 2559, 2560, 2633, 3200];
+const widths = [320, 420, 833, 834, 900, 1023, 1024, 1280, 1440, 1679, 1680, 1920, 2559, 2560, 2633, 3199, 3200, 3840];
 const results = [];
 await mkdir(output, { recursive: true });
 for (const [engine, type] of Object.entries({ chromium, webkit })) {
@@ -55,7 +55,7 @@ for (const [engine, type] of Object.entries({ chromium, webkit })) {
       assert.ok(Math.abs(layout.topPadding - 20) < 1, `${label}: top padding`);
       assert.ok(Math.abs(layout.footerGap - 20) < 1, `${label}: Thank You gap`);
       assert.ok(layout.overflow <= 1, `${label}: no horizontal overflow`);
-      assert.equal(layout.columns.length, width < 834 ? 1 : width < 1024 ? 2 : width < 2560 ? 3 : 4);
+      assert.equal(layout.columns.length, width < 834 ? 1 : width < 1024 ? 2 : width < 2560 ? 3 : width < 3200 ? 4 : 5);
       assert.equal(layout.columns.reduce((count, col) => count + col.cards.length, 0), 27, `${label}: every project visible`);
       for (const [index, column] of layout.columns.entries()) {
         assert.ok(Math.abs(column.firstInset) < 1 && Math.abs(column.lastInset) < 1, `${label}: ${column.name} has no extra vertical padding`);

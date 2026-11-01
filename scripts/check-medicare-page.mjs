@@ -27,7 +27,7 @@ for (const [engine, type] of Object.entries({ chromium, webkit })) {
       await card.locator('.br-medicare-preload').evaluate((img) => img.decode());
       assert.equal(await card.getAttribute('data-br-id'), '27');
       assert.equal(await page.locator('[data-br-id]').evaluateAll((cards) => cards.filter((c) => c.offsetWidth && c.offsetHeight).length), 27);
-      if (width < 834) assert.deepEqual(await page.locator('[data-br-mobile-order]').evaluateAll((cards) => cards.slice(0, 10).map((c) => c.dataset.brId)), ['1','3','20','2','18','9','14','25','19','27']);
+      if (width < 834) assert.deepEqual(await page.locator('[data-br-mobile-order]').evaluateAll((cards) => cards.slice(0, 10).map((c) => c.dataset.brId)), ['1','3','27','18','20','2','19','9','14','25']);
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
       const art = card.locator('.br-medicare-collage');
       // WebKit can retain the previous page's pointer position. Hover now

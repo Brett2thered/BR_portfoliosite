@@ -1,12 +1,23 @@
 # Home-screen cards — cheat sheet
 
-The home page (`export/index.html`) has **27 unique visible cards**, including Medicare, across responsive 1–4-column layouts. The authored export also contains one hidden duplicate Levels card.
+The home page (`export/index.html`) has **27 unique visible cards**, including Medicare, across responsive 1–5-column layouts. The authored export also contains one hidden duplicate Levels card.
 Each card's **name** is its Framer layer name (`data-framer-name`). The small pill on each
 card is its **category chip** (Work / Stats / Reference …) — chips repeat, so the name is
 the real identifier.
 
 - **Visual key:** `export/cards-cheatsheet.png` — same layout with `#number  Name` overlaid on every card.
-- **Source of truth:** `export/theme.js` registers unique card IDs and the mobile sequence. The legacy inventory below retains its original numbering; it is not the runtime ID map.
+- **Source of truth:** `export/theme.js` registers unique card IDs and one `CARD_ORDER` for every layout. The legacy inventory below retains its original numbering; it is not the runtime ID map.
+
+## Fixed responsive ordering
+
+- Hello and Brett's introductory video are always first and second in Column 1. On mobile they are the first two cards in the single feed.
+- Opening: **Hello → introductory video → Medicare → 1PRM → Cloud People → Anchor Maps → doc.ai**.
+- The remaining non-stat sequence is unchanged: Meta, Levels, Anthem, Abdullah, Arya, Navdy, Nir Eyal, Triton, Intel, patchworks, Scott Snibbe, Resident Designer, Wonder Workshop, Ted Goldstein, Education, Hack, TEDx.
+- The three stats follow that content, in ranking/capital/rating order. Their styling is not part of ordering changes.
+- Breakpoints (CSS viewport widths): **1** below 834; **2** from 834; **3** from 1024; **4** from 2560; **5** from 3200.
+- Wider placement reserves Column 1's first two slots for Hello/video, then distributes the rest round-robin starting in Column 2. No height measurements, shortest-column placement, loading-dependent reordering or card clones.
+- Every outer card wrapper has CSS `order:0` at every breakpoint. All columns share 20px gutters and gaps; Column 5 inherits the same fluid card styling. Thank You remains outside and below the complete feed.
+- Regression: `npm run test:responsive-layout` (both engines, boundary widths, forward/reverse resizing, delayed media/fonts, cold wide loads, node identity and editor coverage).
 
 Numbering is reading order: Column 1 top→bottom, then Column 2, then Column 3.
 
@@ -14,7 +25,7 @@ Numbering is reading order: Column 1 top→bottom, then Column 2, then Column 3.
 
 - Runtime ID: **27**, Framer name: **Medicare**.
 - Native link: `medicare.html`; readable route: `/medicare`.
-- Static card is the first entry in authored Column 2. On mobile it follows Doc.ai (10th), preserving the existing first nine cards. Thank You remains last.
+- Static card is the first entry in authored Column 2. Runtime ordering puts it third on mobile and at the top of Column 2 on wider layouts. Thank You remains last.
 - Hero: original `assets/medicare/hero-reference.png`, animated through clipped SVG layers with viewport suspension and reduced-motion support. No pause button or footer caption. Hover/keyboard focus switches to the official National Design Studio wordmark on a monochrome field and pauses hidden motion; the link still opens the Medicare case study.
 - Source template: `scripts/templates/medicare-card.html`; rebuild with `npm run medicare-card` (also runs before publishing).
 - Working prototype: `prototypes/medicare/`, isolated from the portfolio in a sandboxed iframe and clearly marked as sample content.
@@ -22,7 +33,7 @@ Numbering is reading order: Column 1 top→bottom, then Column 2, then Column 3.
 
 ## Native stats cards
 
-- Ranking, capital, and rating retain runtime IDs **8, 11, 23** and their existing positions/order.
+- Ranking, capital, and rating retain runtime IDs **8, 11, 23**, appear after other portfolio content, and preserve their existing visual styling.
 - Source of truth: the three definitions in `scripts/build-stats-cards.mjs`. Run `npm run stats-cards` to rebuild their static HTML (also runs before publishing).
 - Styling: `export/stats-cards.css`, with card-relative type, intrinsic height, consistent padding, and CSS-only rating stars. No images, SVG, canvas, number shadows, or runtime rendering.
 - Direct preview anchors: `#stats-ranking`, `#stats-capital`, `#stats-rating`.
@@ -82,6 +93,6 @@ Resident Designer Video · Cloud People · Doc.ai · Hiro · Stats w/ Dark Stars
 Anthem · TedX · Wonder
 
 ## Things worth a look
-- **#10 / #17 Levels are duplicates** — identical name, link (`levels.html`) and cover (`img_13.png`), both visible. Likely an accidental repeat in the masonry.
+- **#10 / #17 Levels are duplicates** — identical name, link (`levels.html`) and cover (`img_13.png`); the runtime intentionally keeps only one visible.
 - **Repeated names** are by design in Framer but ambiguous in code: 4× "Reference Card", 2× "Levels". Disambiguated above by person/link/cover.
 - **Chip inconsistencies:** `#19 Cloud People` chip is lowercase "work"; `#24 Education Card` chip says "Hello" (probably should be "Education").

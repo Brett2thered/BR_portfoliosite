@@ -153,158 +153,86 @@
   }
 
   // ---------- Responsive project columns ----------
-  // The masonry ships as three equal flex columns (each flex:1 0 0, so N
-  // visible columns split the row into N equal tracks). Framer hides columns
-  // 2/3 on phones/tablets; from 1680px up all three show, which on a 27" QHD /
-  // Studio Display / ultrawide / 4K panel stretches every card past 800px and
-  // reads sparse. At >=2560px (the common "large display" floor) we add a
-  // fourth equal column and rebalance every visible card across the four by
-  // height (shortest column first), then restore the exact original
-  // three-column layout below the threshold. Card nodes are MOVED, never
-  // cloned, so the hover wrapper, shine overlay, Motion hover listeners and
-  // data-br tags added by the other runtime scripts travel with each card.
+  // One editorial sequence for every layout. Never use loaded media, font
+  // metrics or card heights to choose a column: these can arrive in any order.
+  // Existing outer card nodes are moved, preserving their links and listeners.
   var TWO_COL_MIN = 834;
   var THREE_COL_MIN = 1024;
   var FOUR_COL_MIN = 2560;
-  // Opening projects follow the requested mobile sequence. The rest alternate
-  // work, references and stats in a stable order rather than shuffling on load.
-  var MOBILE_CARD_ORDER = [
-    1, 3, 20, 2, 18, 9, 14, 25, 19, 27,
-    4, 5, 8, 7, 12, 15, 6, 11, 17, 13, 16, 23, 26, 24, 21, 10, 22
+  var FIVE_COL_MIN = 3200;
+  var CARD_ORDER = [
+    1, 3, 27, 18, 20, 2, 19,
+    9, 14, 25, 4, 5, 7, 12, 15, 6, 17, 13, 16, 26, 24, 21, 10, 22,
+    8, 11, 23
   ];
-  var col4 = null;
-  var origOrder = null; // [{node, parent}] in authored order, for exact 3-col restore
+  var layoutCount = 0;
+  var syncColumns = null;
 
   function colByName(name) {
     return document.querySelector('[data-framer-name="' + name + '"]');
   }
-  function baseColumns() {
-    return ['Column 1', 'Column 2', 'Column 3'].map(colByName).filter(Boolean);
-  }
-  function isCardVisible(node) {
-    if (node.nodeType !== 1) return false;
-    var fn = node.getAttribute('data-framer-name') || '';
-    if (fn.indexOf('Column') === 0) return false;       // nested column stack, not a card
-    return !!(node.offsetWidth || node.offsetHeight);    // excludes display:none duplicates/curation
-  }
-
   function isLayoutCard(node) {
     if (node.nodeType !== 1 || node.style.display === 'none') return false;
     var fn = node.getAttribute('data-framer-name') || '';
     return fn.indexOf('Column') !== 0;
   }
 
-  function recordOriginal() {
-    if (origOrder) return;
-    origOrder = [];
-    baseColumns().forEach(function (col) {
-      Array.prototype.forEach.call(col.children, function (node) {
-        origOrder.push({ node: node, parent: col });
-      });
-    });
-  }
-
-  function restoreThree() {
-    if (!origOrder) return;
-    // Re-append every original child to its original column in authored order;
-    // appendChild moves the node, so iterating in document order rebuilds the
-    // exact three-column DOM (including the hidden duplicate variant).
-    origOrder.forEach(function (rec) {
-      rec.node.removeAttribute('data-br-mobile-order');
-      rec.parent.appendChild(rec.node);
-    });
-    var container = origOrder[0] && origOrder[0].parent.parentNode;
-    if (container) container.removeAttribute('data-br-mobile-stack');
-    if (col4 && col4.parentNode) col4.parentNode.removeChild(col4);
-    col4 = null;
-  }
-
-  function applyFour() {
-    var cols = baseColumns();
+  function setupResponsiveColumns() {
+    if (syncColumns) { syncColumns(); return; }
+    var cols = ['Column 1', 'Column 2', 'Column 3'].map(colByName).filter(Boolean);
     if (cols.length < 3) return;
     var container = cols[0].parentNode;
-    if (!container) return;
-
-    // Fourth column clones Column 1's class, so flex:1 0 0 / justify / gap are
-    // pixel-identical and the row immediately divides into four equal tracks.
-    col4 = document.createElement('div');
-    col4.className = cols[0].className;
-    col4.setAttribute('data-framer-name', 'Column 4');
-    container.appendChild(col4);
-    cols.push(col4);
-
-    // Gather visible cards in authored order, then measure each at its final
-    // (4-col) width in one pass — every track is the same width, so a card's
-    // height is independent of which column it lands in.
-    var cards = [];
+    var records = [];
     cols.forEach(function (col) {
       Array.prototype.forEach.call(col.children, function (node) {
-        if (isCardVisible(node)) cards.push(node);
+        if (isLayoutCard(node)) records.push({ node: node, sourceIndex: records.length });
       });
     });
-    var measures = cards.map(function (n) { return n.offsetHeight || 0; });
-
-    // Greedy masonry: drop each card into the currently shortest column.
-    var heights = [0, 0, 0, 0];
-    cards.forEach(function (node, idx) {
-      var i = heights.indexOf(Math.min.apply(Math, heights));
-      cols[i].appendChild(node);           // appendChild MOVES the node
-      heights[i] += measures[idx];
+    records.sort(function (a, b) {
+      var aRank = CARD_ORDER.indexOf(Number(a.node.getAttribute('data-br-id')));
+      var bRank = CARD_ORDER.indexOf(Number(b.node.getAttribute('data-br-id')));
+      return (aRank < 0 ? CARD_ORDER.length + a.sourceIndex : aRank) -
+        (bRank < 0 ? CARD_ORDER.length + b.sourceIndex : bRank);
     });
-  }
-
-  function applyTwo() {
-    var cols = baseColumns().slice(0, 2);
-    if (cols.length < 2 || !origOrder) return;
-
-    // At tablet widths Column 3 is intentionally hidden by Framer. Move every
-    // non-duplicate project into the two visible columns in authored order so
-    // the project list remains complete without creating a third narrow track.
-    var cards = origOrder
-      .map(function (rec) { return rec.node; })
-      .filter(isLayoutCard);
-
-    cards.forEach(function (node, index) {
-      cols[index % 2].appendChild(node);
-    });
-  }
-
-  function applyMobile() {
-    var column = colByName('Column 1');
-    if (!column || !origOrder) return;
-    var cards = origOrder.map(function (rec) { return rec.node; }).filter(isLayoutCard);
-    cards.sort(function (a, b) {
-      var aRank = MOBILE_CARD_ORDER.indexOf(Number(a.getAttribute('data-br-id')));
-      var bRank = MOBILE_CARD_ORDER.indexOf(Number(b.getAttribute('data-br-id')));
-      return (aRank < 0 ? MOBILE_CARD_ORDER.length : aRank) -
-        (bRank < 0 ? MOBILE_CARD_ORDER.length : bRank);
-    });
-    column.parentNode.setAttribute('data-br-mobile-stack', '');
-    cards.forEach(function (card, index) {
-      card.setAttribute('data-br-mobile-order', String(index));
-      column.appendChild(card);
-    });
-    // Thank You is outside the project columns and remains the final card.
-  }
-
-  function setupResponsiveColumns() {
-    if (baseColumns().length < 3) return;  // page has no masonry — no-op
-    recordOriginal();
-    var mobile = window.matchMedia('(max-width: ' + (TWO_COL_MIN - 0.02) + 'px)');
-    var twoColumn = window.matchMedia(
-      '(min-width: ' + TWO_COL_MIN + 'px) and (max-width: ' + (THREE_COL_MIN - 0.02) + 'px)'
-    );
-    var fourColumn = window.matchMedia('(min-width: ' + FOUR_COL_MIN + 'px)');
-    function sync() {
-      restoreThree();                      // canonical 3-col base (idempotent)
-      if (mobile.matches) applyMobile();
-      else if (twoColumn.matches) applyTwo();
-      else if (fourColumn.matches) applyFour();
+    // Only the empty column shells are new. Cards and media are never cloned.
+    for (var number = 4; number <= 5; number++) {
+      var column = document.createElement('div');
+      column.className = cols[0].className;
+      column.setAttribute('data-framer-name', 'Column ' + number);
+      container.appendChild(column);
+      cols.push(column);
     }
-    sync();
-    [mobile, twoColumn, fourColumn].forEach(function (query) {
-      if (query.addEventListener) query.addEventListener('change', sync);
-      else if (query.addListener) query.addListener(sync); // Safari < 14
+    var queries = [TWO_COL_MIN, THREE_COL_MIN, FOUR_COL_MIN, FIVE_COL_MIN].map(function (min) {
+      return window.matchMedia('(min-width: ' + min + 'px)');
+    });
+    syncColumns = function () {
+      var count = 1;
+      queries.forEach(function (query, index) { if (query.matches) count = index + 2; });
+      if (count === layoutCount) return;
+      layoutCount = count;
+      container.setAttribute('data-br-column-count', String(count));
+      if (count === 1) container.setAttribute('data-br-mobile-stack', '');
+      else container.removeAttribute('data-br-mobile-stack');
+      cols.forEach(function (col, index) {
+        if (index >= count) col.setAttribute('data-br-inactive-column', '');
+        else col.removeAttribute('data-br-inactive-column');
+      });
+      records.forEach(function (record, index) {
+        var card = record.node;
+        card.setAttribute('data-br-feed-order', String(index));
+        if (count === 1) card.setAttribute('data-br-mobile-order', String(index));
+        else card.removeAttribute('data-br-mobile-order');
+        // Reserve the upper-left pair. The rest start in Column 2 and wrap
+        // through every active column, preserving the remaining sequence.
+        var target = count === 1 || index < 2 ? 0 : (index - 1) % count;
+        cols[target].appendChild(card);
+      });
+      window.dispatchEvent(new CustomEvent('br:layout', { detail: { columns: count } }));
+    };
+    syncColumns();
+    queries.forEach(function (query) {
+      if (query.addEventListener) query.addEventListener('change', syncColumns);
+      else if (query.addListener) query.addListener(syncColumns);
     });
   }
 
@@ -494,6 +422,8 @@
 
   window.__brTheme = {
     cards: CARDS,
+    cardOrder: CARD_ORDER.slice(),
+    getColumnCount: function () { return layoutCount; },
     injectMissingChips: injectMissingChips,
     tagCards: tagCards,
     fixDroppedCards: fixDroppedCards,
