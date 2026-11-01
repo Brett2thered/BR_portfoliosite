@@ -56,7 +56,7 @@ for (const [engine, type] of Object.entries({ chromium, webkit })) {
       assert.ok(Math.abs(layout.footerGap - 20) < 1, `${label}: Thank You gap`);
       assert.ok(layout.overflow <= 1, `${label}: no horizontal overflow`);
       assert.equal(layout.columns.length, width < 834 ? 1 : width < 1024 ? 2 : width < 2560 ? 3 : 4);
-      assert.equal(layout.columns.reduce((count, col) => count + col.cards.length, 0), 26, `${label}: every project visible`);
+      assert.equal(layout.columns.reduce((count, col) => count + col.cards.length, 0), 27, `${label}: every project visible`);
       for (const [index, column] of layout.columns.entries()) {
         assert.ok(Math.abs(column.firstInset) < 1 && Math.abs(column.lastInset) < 1, `${label}: ${column.name} has no extra vertical padding`);
         if (index) assert.ok(Math.abs(column.x - layout.columns[index - 1].x - layout.columns[index - 1].width - 20) < 1, `${label}: horizontal gutter`);

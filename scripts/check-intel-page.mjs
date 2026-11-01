@@ -32,7 +32,7 @@ for (const [engine, type] of Object.entries({ chromium, webkit })) {
       assert.equal(await card.getAttribute('href'), 'intel.html');
       assert.notEqual(await card.getAttribute('target'), '_blank');
       assert.equal(await card.evaluate((el) => getComputedStyle(el).textDecorationLine), 'none');
-      assert.equal(await page.locator('[data-br-id]').evaluateAll((items) => items.filter((el) => el.offsetWidth && el.offsetHeight).length), 26);
+      assert.equal(await page.locator('[data-br-id]').evaluateAll((items) => items.filter((el) => el.offsetWidth && el.offsetHeight).length), 27);
       assert.equal(await page.locator('a[data-framer-name="Anthem"]').getAttribute('href'), 'anthem.html');
       await card.scrollIntoViewIfNeeded();
       if (width === 768) { await card.focus(); await card.press('Enter'); }

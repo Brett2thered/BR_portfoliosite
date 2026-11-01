@@ -1,0 +1,50 @@
+/* The supplied hero, recomposed for a portfolio card. No replacement imagery. */
+.br-medicare-card {
+  position: relative; display: block; flex: none; width: 100%; aspect-ratio: .9;
+  overflow: hidden; border-radius: 20px; container-type: inline-size;
+  background: #f0f4f3; color: #123c3c;
+}
+.br-medicare-link { position: absolute; inset: 0; display: block; color: inherit; text-decoration: none; }
+.br-medicare-link:focus-visible { outline: 3px solid #3760f2; outline-offset: -5px; border-radius: inherit; }
+.br-medicare-front { position: absolute; inset: 0; display: block; opacity: 1; transform: translateY(0); transition: opacity 220ms cubic-bezier(.22,1,.36,1), transform 280ms cubic-bezier(.22,1,.36,1); }
+.br-medicare-chip {
+  position: absolute; z-index: 3; top: 6%; left: 50%; transform: translateX(-50%);
+  padding: 8px 22px; border: 1px solid #fdfefe; border-radius: 30px;
+  font: 400 clamp(14px, 3.8cqw, 22px)/1.2 "Inter", "Helvetica Neue", sans-serif; color: #527675;
+}
+.br-medicare-headline {
+  position: absolute; top: 18%; left: 8%; z-index: 2;
+  font: 500 clamp(30px, 10.8cqw, 68px)/.98 "Inter", "Helvetica Neue", sans-serif;
+  letter-spacing: -.055em;
+}
+.br-medicare-headline > span { color: #1b7478; }
+.br-medicare-art { position: absolute; width: 100%; height: 60%; left: 0; bottom: 6%; overflow: visible; pointer-events: none; }
+.br-medicare-collage { transform-origin: 1000px 520px; animation: medicare-collage 9s cubic-bezier(.37, 0, .63, 1) infinite; }
+.br-medicare-id { transform-origin: 990px 638px; animation: medicare-id 9s cubic-bezier(.37, 0, .63, 1) infinite; }
+.br-medicare-people { transform-origin: 990px 430px; animation: medicare-people 9s cubic-bezier(.37, 0, .63, 1) infinite; }
+.br-medicare-preload { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.br-medicare-studio {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding: 10%; background: #010101; color: #f2f2f2; opacity: 0; pointer-events: none;
+  transition: opacity 240ms cubic-bezier(.22,1,.36,1);
+}
+.br-medicare-studio-content { display: flex; width: 100%; flex-direction: column; align-items: flex-start; gap: 28px; transform: translateY(10px); transition: transform 300ms cubic-bezier(.22,1,.36,1); }
+.br-medicare-studio img { display: block; width: 100%; height: auto; }
+.br-medicare-studio-name { font: 400 clamp(16px, 4.5cqw, 30px)/1.2 "Inter", "Helvetica Neue", sans-serif; letter-spacing: -.025em; }
+.br-medicare-link:focus-visible .br-medicare-front { opacity: 0; transform: translateY(-6px); }
+.br-medicare-link:focus-visible .br-medicare-studio { opacity: 1; }
+.br-medicare-link:focus-visible .br-medicare-studio-content { transform: translateY(0); }
+@media (hover: hover) and (pointer: fine) {
+  .br-medicare-card:hover .br-medicare-front { opacity: 0; transform: translateY(-6px); }
+  .br-medicare-card:hover .br-medicare-studio { opacity: 1; }
+  .br-medicare-card:hover .br-medicare-studio-content { transform: translateY(0); }
+}
+.br-medicare-card[data-motion="paused"] :is(.br-medicare-collage, .br-medicare-id, .br-medicare-people) { animation-play-state: paused; }
+@keyframes medicare-collage { 0%, 100% { transform: translateY(6px); } 50% { transform: translateY(-7px); } }
+@keyframes medicare-id { 0%, 100% { transform: translate(0, 5px) rotate(-1deg); } 50% { transform: translate(-4px, -10px) rotate(1.2deg); } }
+@keyframes medicare-people { 0%, 100% { transform: translateY(-3px) rotate(.4deg); } 50% { transform: translateY(5px) rotate(-.4deg); } }
+@media (max-width: 833.98px) { .br-medicare-card { border-radius: 10px; } }
+@media (prefers-reduced-motion: reduce) {
+  .br-medicare-card :is(.br-medicare-collage, .br-medicare-id, .br-medicare-people) { animation: none; }
+  .br-medicare-front, .br-medicare-studio, .br-medicare-studio-content { transition: none; }
+}

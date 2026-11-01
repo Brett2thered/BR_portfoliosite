@@ -1,0 +1,27 @@
+.medicare-case-study .project-header h1 { color: #267678; }
+.medicare-demo-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; }
+.medicare-demo-heading h2 { margin-bottom: 8px; }
+.medicare-demo-heading p { margin: 0; }
+.medicare-demo-heading > a { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; color: #1b7478; }
+.medicare-prototype-note { max-width: none !important; margin: 24px 0 20px; padding: 16px 20px; background: #edf4f1; color: #41645b; border-radius: 12px; font-size: 14px; line-height: 1.6; }
+.medicare-browser { overflow: hidden; border: 1px solid #d9e3df; border-radius: 20px; background: #fdfdfc; }
+.medicare-browser-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 20px; min-height: 60px; padding: 8px 20px; background: #eef3f1; border-bottom: 1px solid #d9e3df; font-size: 13px; color: #557068; }
+.medicare-browser-dots { display: flex; gap: 6px; }
+.medicare-browser-dots i { width: 7px; height: 7px; border-radius: 50%; background: #baccc5; }
+.medicare-browser-bar button { margin-left: auto; padding: 8px 12px; min-height: 44px; font: inherit; color: #315f56; border: 1px solid #c4d7ce; border-radius: 8px; background: #fafdfb; cursor: pointer; }
+.medicare-browser-bar button:hover { background: #e2eee8; }
+.medicare-browser-bar button:focus-visible { outline: 2px solid #1b7478; outline-offset: 3px; }
+#medicare-prototype { display: block; width: 100%; height: 800px; border: 0; background: #fdfdfc; }
+.medicare-demo-hint { color: #757a80; font-size: 13px; margin: 14px 0 0; }
+.medicare-design-notes { max-width: none; }
+.medicare-design-notes h3 { margin: 0 0 12px; color: #757a80; font-size: 20px; line-height: 1.3; letter-spacing: -.025em; }
+.medicare-hero-reference { margin-inline: 0; }
+.medicare-hero-reference img { display: block; width: 100%; height: auto; border-radius: 20px; }
+@media (max-width: 700px) {
+  .medicare-prototype-note { padding: 14px 16px; }
+  .medicare-browser, .medicare-hero-reference img { border-radius: 10px; }
+  .medicare-browser-bar { padding: 8px 12px; gap: 4px 12px; }
+  .medicare-browser-dots { display: none; }
+  .medicare-browser-bar button { font-size: 12px; padding-inline: 8px; }
+  #medicare-prototype { height: 760px; }
+}

@@ -6,7 +6,7 @@
   'use strict';
 
   // ---------- Card registry ----------
-  // Each card on the homepage has a sequential id (#1..#26) and a
+  // Each card on the homepage has a sequential id (#1..#27) and a
   // human-friendly name. Use these names when discussing the page.
   // Matching priority: framerName, then chip+body text.
   var CARDS = [
@@ -35,7 +35,8 @@
     { id: 23, name: 'Stat: 4.9★',         chip: 'Stats',     body: '4.9' },
     { id: 24, name: 'Ref: Ted Goldstein', chip: 'Reference', body: 'Goldstien' },
     { id: 25, name: 'Anthem',             framerName: 'Anthem' },
-    { id: 26, name: 'Wonder Workshop',    framerName: 'Wonder' }
+    { id: 26, name: 'Wonder Workshop',    framerName: 'Wonder' },
+    { id: 27, name: 'Medicare',           framerName: 'Medicare' }
   ];
 
   // Cards that ship without a Text Chip — inject the site's standard chip.
@@ -168,7 +169,7 @@
   // Opening projects follow the requested mobile sequence. The rest alternate
   // work, references and stats in a stable order rather than shuffling on load.
   var MOBILE_CARD_ORDER = [
-    1, 3, 20, 2, 18, 9, 14, 25, 19,
+    1, 3, 20, 2, 18, 9, 14, 25, 19, 27,
     4, 5, 8, 7, 12, 15, 6, 11, 17, 13, 16, 23, 26, 24, 21, 10, 22
   ];
   var col4 = null;

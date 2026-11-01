@@ -33,6 +33,10 @@
     {
       "source": "/intel",
       "destination": "/intel.html"
+    },
+    {
+      "source": "/medicare",
+      "destination": "/medicare.html"
     }
   ]
 }

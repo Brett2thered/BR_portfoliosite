@@ -1,15 +1,23 @@
 # Home-screen cards — cheat sheet
 
-The home page (`export/index.html`) is a Framer masonry of **27 cards** across 3 columns.
+The home page (`export/index.html`) has **27 unique visible cards**, including Medicare, across responsive 1–4-column layouts. The authored export also contains one hidden duplicate Levels card.
 Each card's **name** is its Framer layer name (`data-framer-name`). The small pill on each
 card is its **category chip** (Work / Stats / Reference …) — chips repeat, so the name is
 the real identifier.
 
 - **Visual key:** `export/cards-cheatsheet.png` — same layout with `#number  Name` overlaid on every card.
-- **Source of truth:** enumerated from the live DOM with the exact card-root logic the site
-  itself uses (`export/hover-animation.js:50-56`, `verify-hover.js:89-104`) at 1800px. All 27 are visible.
+- **Source of truth:** `export/theme.js` registers unique card IDs and the mobile sequence. The legacy inventory below retains its original numbering; it is not the runtime ID map.
 
 Numbering is reading order: Column 1 top→bottom, then Column 2, then Column 3.
+
+## Medicare addition
+
+- Runtime ID: **27**, Framer name: **Medicare**.
+- Native link: `medicare.html`; readable route: `/medicare`.
+- Static card is the first entry in authored Column 2. On mobile it follows Doc.ai (10th), preserving the existing first nine cards. Thank You remains last.
+- Hero: original `assets/medicare/hero-reference.png`, animated through clipped SVG layers with viewport suspension and reduced-motion support. No pause button or footer caption. Hover/keyboard focus switches to the official National Design Studio wordmark on a monochrome field and pauses hidden motion; the link still opens the Medicare case study.
+- Source template: `scripts/templates/medicare-card.html`; rebuild with `npm run medicare-card` (also runs before publishing).
+- Working prototype: `prototypes/medicare/`, isolated from the portfolio in a sandboxed iframe and clearly marked as sample content.
 
 ---
 
