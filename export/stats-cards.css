@@ -2,7 +2,8 @@
 .br-stat-card {
   position: relative; display: block; flex: none; width: 100%; height: auto;
   container-type: inline-size; overflow: hidden; border-radius: 10px;
-  background: #fcfcfc; color: #34434b;
+  --br-stat-shadow-opacity: .1;
+  background: #fff; color: #34434b;
   font-family: "Manrope", "Helvetica Neue", sans-serif;
   font-kerning: normal;
 }
@@ -26,17 +27,25 @@
 }
 .br-stat-metric { display: flex; flex-direction: column; align-items: center; gap: 1rem; max-width: 100%; }
 .br-stat-value {
-  display: flex; align-items: baseline; justify-content: center; gap: .06em; margin: 0;
+  display: block; margin: 0; text-align: center;
+  /* Historical Framer design: heavy system-display type, white lettering,
+     two translucent contact shadows, plus a broad, very light halo. */
+  font-family: ".SFNSDisplay-Heavy", "SFProDisplay-Heavy", "SFUIDisplay-Heavy",
+    ".SFUIDisplay-Heavy", "SF Pro Display", -apple-system, BlinkMacSystemFont,
+    system-ui, "Helvetica Neue", sans-serif;
+  color: #fff;
   /* Keep long monetary values on one line when browser text is enlarged;
      descriptions still follow the full user-selected rem size. */
-  font-size: min(clamp(3rem, calc(.75rem + 14cqi), 7rem), 22cqi); font-weight: 800;
-  line-height: 1.05; letter-spacing: -.055em; font-variant-numeric: lining-nums tabular-nums;
-  white-space: nowrap; text-shadow: none;
+  font-size: min(clamp(2.5rem, calc(.75rem + 8cqi), 4.75rem), 22cqi); font-weight: 800;
+  line-height: 1.1; letter-spacing: 0; font-variant-numeric: lining-nums tabular-nums;
+  white-space: nowrap;
+  text-shadow:
+    0 .065em .065em rgb(0 0 0 / var(--br-stat-shadow-opacity)),
+    0 .065em .25em rgb(0 0 0 / var(--br-stat-shadow-opacity)),
+    0 .13em .65em rgb(0 0 0 / .06);
 }
-.br-stat-prefix { font-size: .42em; font-weight: 400; letter-spacing: -.025em; }
-.br-stat-suffix { font-size: .58em; letter-spacing: -.04em; }
-[data-stat="capital"] .br-stat-prefix { font-weight: 800; font-size: .55em; }
-[data-stat="rating"] .br-stat-suffix { font-size: .32em; font-weight: 400; color: #68747c; }
+[data-stat="ranking"] { --br-stat-shadow-opacity: .25; }
+.br-stat-suffix { font: inherit; color: inherit; letter-spacing: inherit; }
 .br-stat-description {
   width: 100%; max-width: 29ch; margin: 0; text-align: center; text-wrap: pretty;
   font-size: clamp(1rem, calc(.875rem + .5cqi), 1.125rem); font-weight: 400; line-height: 1.5;
@@ -49,3 +58,9 @@
 }
 .br-stat-star::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 100%; background: #546773; }
 .br-stat-star:last-child::before { width: 90%; }
+
+/* Preserve the visual treatment normally; make the actual value readable
+   in the user's high-contrast system mode without relying on a shadow. */
+@media (forced-colors: active) {
+  .br-stat-value, .br-stat-suffix { color: CanvasText; text-shadow: none; }
+}

@@ -2,16 +2,16 @@ import { readFile, writeFile } from 'node:fs/promises';
 
 // Source of truth for the existing portfolio facts; no external data or media.
 const stats = [
-  { key:'ranking', name:'Ranked Designer', heading:'Designer ranking', prefix:'Top', value:'1', suffix:'%',
+  { key:'ranking', name:'Ranked Designer', heading:'Designer ranking', value:'1', suffix:'%',
     description:'I was ranked in the top 1% of designers by AngelList (Wellfound).' },
-  { key:'capital', name:'Stats Card', heading:'Capital raised', prefix:'$', value:'22.8', suffix:'M',
+  { key:'capital', name:'Stats Card', heading:'Capital raised', value:'22.8', suffix:'m',
     description:'My work has directly contributed to $22.8 million in capital raised.' },
-  { key:'rating', name:'Stats w/ Dark Stars', heading:'App Store rating', prefix:'', value:'4.9', suffix:'/5', stars:true,
+  { key:'rating', name:'Stats w/ Dark Stars', heading:'App Store rating', value:'4.9', suffix:'', stars:true,
     description:'I designed and led the highest-ranked AR app in the Apple App Store.' }
 ];
 const escape = (text) => text.replace(/[&<>"']/g,(character) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
 function render(stat) {
-  const prefix = stat.prefix ? `<span class="br-stat-prefix">${escape(stat.prefix)}</span>` : '';
+  const suffix = stat.suffix ? `<span class="br-stat-suffix">${escape(stat.suffix)}</span>` : '';
   const stars = stat.stars ? '<div class="br-stat-stars" aria-hidden="true">' + '<span class="br-stat-star"></span>'.repeat(5) + '</div>' : '';
   return `<section id="stats-${stat.key}" class="br-stat-card" data-stat="${stat.key}" data-framer-name="${stat.name}" aria-labelledby="stats-${stat.key}-heading">
   <div class="br-stat-shell">
@@ -19,7 +19,7 @@ function render(stat) {
     <h2 id="stats-${stat.key}-heading" class="br-stat-heading">${stat.heading}</h2>
     <div class="br-stat-core">
       <div class="br-stat-metric">
-        <p class="br-stat-value">${prefix}<span>${stat.value}</span><span class="br-stat-suffix">${stat.suffix}</span></p>${stars ? '\n        '+stars : ''}
+        <p class="br-stat-value"><span>${stat.value}</span>${suffix}</p>${stars ? '\n        '+stars : ''}
       </div>
       <p class="br-stat-description">${stat.description}</p>
     </div>

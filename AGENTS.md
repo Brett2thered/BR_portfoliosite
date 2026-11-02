@@ -6,6 +6,7 @@ These are explicit user requirements. Preserve them in future changes unless the
 - Mobile opening: Hello → introductory video → Medicare (27) → 1PRM (18) → Cloud People (20) → Anchor Maps (2) → doc.ai (19).
 - On wider layouts those priority projects lead the columns beside and immediately after the introduction.
 - Stats (8, 11, 23) stay after the opening projects and other portfolio content. Do not change their typography, artwork, numbers, HTML or visual styling as part of a layout fix.
+- Stats visual treatment is heavy white system-display lettering with soft, low-opacity layered halo shadows, as in the original portfolio. Preserve it when changing layout or implementation; the explanatory captions remain readable dark text.
 - Preserve the remaining non-stat sequence. `CARD_ORDER` in `export/theme.js` is the editorial source of truth; do not introduce another breakpoint-specific sequence.
 - CSS viewport breakpoints: below 834px = 1 column; 834–1023px = 2; 1024–2559px = 3; 2560–3199px = 4; 3200px and above = 5. Columns 4 and 5 inherit the same 20px gutters, spacing, fluid sizing and card-relative styling.
 - Reset legacy CSS `order` on the outer card wrappers at every breakpoint. Visual order must follow DOM order.

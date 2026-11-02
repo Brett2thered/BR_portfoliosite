@@ -35,7 +35,7 @@ Numbering is reading order: Column 1 top→bottom, then Column 2, then Column 3.
 
 - Ranking, capital, and rating retain runtime IDs **8, 11, 23**, appear after other portfolio content, and preserve their existing visual styling.
 - Source of truth: the three definitions in `scripts/build-stats-cards.mjs`. Run `npm run stats-cards` to rebuild their static HTML (also runs before publishing).
-- Styling: `export/stats-cards.css`, with card-relative type, intrinsic height, consistent padding, and CSS-only rating stars. No images, SVG, canvas, number shadows, or runtime rendering.
+- Styling: `export/stats-cards.css`, with the original heavy white system-display metrics and layered, translucent halo shadows; card-relative type, intrinsic height, consistent padding, and CSS-only rating stars. Metric presentation: `1%`, `22.8m`, `4.9`. No images, SVG, canvas, or runtime rendering.
 - Direct preview anchors: `#stats-ranking`, `#stats-capital`, `#stats-rating`.
 - Responsive regression: `npm run test:stats`, including 200% text and no-script/no-image/no-font fallbacks.
 
