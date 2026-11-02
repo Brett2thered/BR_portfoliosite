@@ -90,6 +90,29 @@
   transform: none !important;
 }
 
+/* Wonder follows the same title/body hierarchy as the other project cards.
+   Its exported flow put the logo first and the chip 150px below it. Keep
+   these positions stable with and without the ASCII reveal's inner wrapper. */
+[data-framer-name="Wonder"] {
+  padding: 0 !important;
+  gap: 0 !important;
+  justify-content: center !important;
+}
+[data-framer-name="Wonder"] [data-framer-name="logo-wonderworkshop"] {
+  width: 74% !important;
+  height: auto !important;
+  aspect-ratio: 1336 / 528;
+  flex: none !important;
+}
+[data-framer-name="Wonder"] .framer-4x6nau-container {
+  position: absolute !important;
+  top: 30px !important;
+  bottom: auto !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+}
+
 /* ---- Text Chip: frosted-glass pill ---- */
 
 /* Native case-study links keep their chip and imagery
