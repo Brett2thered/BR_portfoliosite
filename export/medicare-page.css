@@ -1,4 +1,8 @@
 .medicare-case-study .project-header h1 { color: #267678; }
+.medicare-reel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); align-items: center; gap: 32px 60px; max-width: 900px; margin-inline: auto; }
+.medicare-reel-copy p { margin: 0 0 16px; }
+.medicare-reel-link { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; color: #1b7478; }
+.medicare-reel-player { display: block; width: 100%; max-width: 400px; height: 700px; border: 1px solid #d9e3df; border-radius: 20px; background: #fdfdfc; }
 .medicare-demo-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; }
 .medicare-demo-heading h2 { margin-bottom: 8px; }
 .medicare-demo-heading p { margin: 0; }
@@ -18,6 +22,8 @@
 .medicare-hero-reference { margin-inline: 0; }
 .medicare-hero-reference img { display: block; width: 100%; height: auto; border-radius: 20px; }
 @media (max-width: 700px) {
+  .medicare-reel { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .medicare-reel-player { justify-self: center; height: 660px; border-radius: 10px; }
   .medicare-prototype-note { padding: 14px 16px; }
   .medicare-browser, .medicare-hero-reference img { border-radius: 10px; }
   .medicare-browser-bar { padding: 8px 12px; gap: 4px 12px; }
