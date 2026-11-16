@@ -12,6 +12,15 @@
           "value": "Accept"
         }
       ]
+    },
+    {
+      "source": "/mindos.md",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/markdown; charset=utf-8"
+        }
+      ]
     }
   ],
   "rewrites": [
@@ -37,6 +46,14 @@
     {
       "source": "/medicare",
       "destination": "/medicare.html"
+    },
+    {
+      "source": "/mindos",
+      "destination": "/mindos.html"
+    },
+    {
+      "source": "/mindos.md",
+      "destination": "/markdown/mindos.md"
     }
   ]
 }

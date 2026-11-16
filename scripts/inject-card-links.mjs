@@ -5,6 +5,13 @@ const path = new URL('../export/index.html', import.meta.url);
 const html = await readFile(path, 'utf8');
 const links = [
   {
+    name: 'MindOS / TEDx',
+    pattern: /<a\b[^>]*\bdata-framer-name="TedX"[^>]*>/g,
+    url: '/mindos',
+    label: 'Explore MindOS — spatial thinking and the TEDx talk',
+    target: '_self',
+  },
+  {
     name: 'Abdullah reference',
     pattern: /<a\b[^>]*\bclass="[^"]*\bframer-qhhse3\b[^"]*"[^>]*>/g,
     url: 'https://www.linkedin.com/in/mrshakur/',

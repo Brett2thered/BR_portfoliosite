@@ -1,0 +1,121 @@
+/* MindOS uses the geometry and colours of the original spatial prototype. */
+.mindos-cover {
+  --mindos-brand-opacity: 1;
+  --mindos-brand-scale: 1;
+  container-type: inline-size;
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  isolation: isolate;
+  background: #e7e7e7;
+  border-radius: 10px;
+  color: #3b3549;
+  text-decoration: none;
+}
+/* Scope the legacy Framer reset to this one card. */
+a.mindos-cover[data-framer-name="TedX"] {
+  display: block !important;
+  height: auto !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  aspect-ratio: 1 !important;
+  background: #e7e7e7 !important;
+  color: #3b3549;
+}
+.mindos-cover__motion {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.mindos-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(transparent 65%, #e7e7e7 94%);
+}
+.mindos-cover__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: #242034;
+  opacity: var(--mindos-brand-opacity);
+  pointer-events: none;
+}
+.mindos-cover__heading {
+  position: absolute;
+  top: 40%;
+  left: 12%;
+  width: 76%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2cqw;
+  opacity: var(--mindos-brand-opacity);
+  transform: translateY(-50%) scale(var(--mindos-brand-scale));
+  pointer-events: none;
+}
+.mindos-cover__logo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.mindos-cover__subtitle {
+  color: #ded9e8;
+  font: 400 3.5cqw/1.5 "Manrope", "Helvetica Neue", sans-serif;
+  letter-spacing: -.015em;
+}
+.mindos-cover__footer {
+  position: absolute;
+  z-index: 4;
+  left: 7%;
+  right: 7%;
+  bottom: 6.5%;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mindos-cover__tedx { display: flex; flex-direction: column; gap: 1.6cqw; }
+.mindos-cover__tedx img { display: block; width: 23cqw; height: auto; }
+.mindos-cover__tedx small { font: 400 2.65cqw/1.3 "Manrope", "Helvetica Neue", sans-serif; color: #625b6c; }
+.mindos-cover__arrow {
+  display: grid;
+  place-items: center;
+  width: 10cqw;
+  height: 10cqw;
+  border: 1px solid #99909f;
+  border-radius: 50%;
+  font: 400 5cqw/1 Arial, sans-serif;
+  transition: background .2s, color .2s, transform .2s;
+}
+.mindos-cover:is(:hover, :focus-visible) .mindos-cover__arrow { background: #3b3549; color: #fff; transform: rotate(-35deg); }
+.mindos-cover:focus-visible { outline: 3px solid #7747ac; outline-offset: 4px; }
+
+.mindos-page .project-header { margin-bottom: 48px; }
+.mindos-page .project-header h1 { color: #776783; }
+.mindos-scene { margin: 56px 0 0; }
+.mindos-scene__frame { background: #e7e7e7; border-radius: 20px; overflow: hidden; }
+.mindos-scene video { display: block; width: 100%; height: auto; max-height: 620px; object-fit: contain; }
+.mindos-scene figcaption { align-items: start; }
+.mindos-scene figcaption p { margin: 0; max-width: 64ch; }
+.mindos-page .animation-gallery { margin-top: 24px; }
+.mindos-talk { margin-top: 64px; }
+.mindos-talk > p { max-width: 65ch; margin-bottom: 24px; }
+.mindos-talk .project-walkthrough { margin-top: 0; }
+
+@media (max-width: 700px) {
+  .mindos-scene, .mindos-talk { margin-top: 40px; }
+  .mindos-scene__frame { border-radius: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mindos-cover__arrow { transition: none; }
+  .mindos-cover:is(:hover, :focus-visible) .mindos-cover__arrow { transform: none; }
+}

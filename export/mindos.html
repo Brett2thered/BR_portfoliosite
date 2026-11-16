@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script src="ascii-skeletons.js"></script>
+  <script src="ascii-loaders.js"></script>
+  <script src="media-loaders.js"></script>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-E9WKM6FF0H"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-E9WKM6FF0H');
+</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="assets/favicon.png">
+  <link rel="stylesheet" href="project-page.css">
+  <link rel="stylesheet" href="mindos.css">
+  <script src="project-animations.js" defer></script>
+  <!-- br-seo:start -->
+  <title>MindOS — Spatial Thinking &amp; TEDx | Brett Red</title>
+  <meta name="description" content="Explore MindOS, Brett Red’s spatial workspace for connecting and sharing ideas in virtual reality, presented with Serban Porumbescu at TEDxSanFrancisco.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <link rel="canonical" href="https://www.brett.red/mindos">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brett Red">
+  <meta property="og:title" content="MindOS — Spatial Thinking &amp; TEDx | Brett Red">
+  <meta property="og:description" content="Explore MindOS, Brett Red’s spatial workspace for connecting and sharing ideas in virtual reality, presented with Serban Porumbescu at TEDxSanFrancisco.">
+  <meta property="og:url" content="https://www.brett.red/mindos">
+  <meta property="og:image" content="https://www.brett.red/assets/mindos/cover.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MindOS — Spatial Thinking &amp; TEDx | Brett Red">
+  <meta name="twitter:description" content="Explore MindOS, Brett Red’s spatial workspace for connecting and sharing ideas in virtual reality, presented with Serban Porumbescu at TEDxSanFrancisco.">
+  <meta name="twitter:image" content="https://www.brett.red/assets/mindos/cover.jpg">
+  <link rel="alternate" type="text/markdown" href="https://www.brett.red/mindos.md" title="Markdown version">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://www.brett.red/#person","name":"Brett Red","url":"https://www.brett.red/","jobTitle":"Product Design Leader and Design Engineer","description":"A hands-on product design leader working across product thinking, interaction design, and working prototypes."},{"@type":"WebSite","@id":"https://www.brett.red/#website","name":"Brett Red","url":"https://www.brett.red/","publisher":{"@id":"https://www.brett.red/#person"}},{"@type":"WebPage","@id":"https://www.brett.red/mindos#webpage","name":"MindOS — Spatial Thinking & TEDx | Brett Red","description":"Explore MindOS, Brett Red’s spatial workspace for connecting and sharing ideas in virtual reality, presented with Serban Porumbescu at TEDxSanFrancisco.","url":"https://www.brett.red/mindos","mainEntity":{"@id":"https://www.brett.red/mindos#project"},"author":{"@id":"https://www.brett.red/#person"},"isPartOf":{"@id":"https://www.brett.red/#website"},"inLanguage":"en"},{"@type":"CreativeWork","@id":"https://www.brett.red/mindos#project","name":"MindOS — Spatial Thinking & TEDx","description":"Explore MindOS, Brett Red’s spatial workspace for connecting and sharing ideas in virtual reality, presented with Serban Porumbescu at TEDxSanFrancisco.","url":"https://www.brett.red/mindos","creator":{"@id":"https://www.brett.red/#person"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Brett Red","item":"https://www.brett.red/"},{"@type":"ListItem","position":2,"name":"MindOS — Spatial Thinking & TEDx","item":"https://www.brett.red/mindos"}]}]}</script>
+  <!-- br-seo:end -->
+</head>
+<body>
+  <main class="project-page mindos-page">
+    <nav class="project-nav" aria-label="Portfolio navigation"><a href="/">← Back to all projects</a></nav>
+    <header class="project-header">
+      <h1>MindOS</h1>
+      <p>Spatial thinking · Virtual reality · TEDxSanFrancisco</p>
+    </header>
+
+    <div class="project-overview">
+      <section aria-labelledby="overview-heading">
+        <h2 id="overview-heading">Overview</h2>
+        <p>Why are big ideas so hard to share? After years of working together, engineer Serban Porumbescu and I kept running into the same problem: we could explain an idea, but the connections behind it were much harder to communicate.</p>
+        <p>MindOS grew out of that question. We built a virtual reality workspace where books, websites, videos, and 3D objects could become part of a connected map. A way to explore an idea and the thinking that led to it.</p>
+      </section>
+      <section aria-labelledby="approach-heading">
+        <h2 id="approach-heading">Approach</h2>
+        <p>I approached the experience through physical interactions: pick something up, give it a place, connect it to something else, and change its scale. The space around you becomes a canvas for thinking.</p>
+        <p>The prototype let us show how an idea could expand into its references and relationships, then collapse back into a larger picture. We brought that vision to the TEDxSanFrancisco stage in 2016 with a demo of an entrepreneur’s connected world.</p>
+      </section>
+    </div>
+
+    <figure class="mindos-scene">
+      <div class="mindos-scene__frame">
+        <video id="ideas" data-project-loop data-br-no-skeleton src="assets/mindos/ideas.mp4" poster="assets/mindos/ideas-poster.jpg" width="960" height="960" muted loop playsinline controls preload="none" aria-label="MindOS concept animation: objects unfold into connected turquoise and violet forms"></video>
+      </div>
+      <figcaption><span>Ideas, in every dimension.</span><p>The original concept animation explores moving between an individual thought and the network around it.</p></figcaption>
+    </figure>
+
+    <section class="project-section" aria-labelledby="interactions-heading">
+      <div class="project-motion-controls">
+        <h2 id="interactions-heading">Thinking with your hands</h2>
+        <button class="project-motion-toggle" id="animation-toggle" type="button" aria-controls="ideas pick-and-place anchor connect scale" hidden>Pause all animations</button>
+      </div>
+      <p class="project-motion-note" id="animation-mode" role="status">These demos are silent. Use each video’s controls to play or pause it.</p>
+      <div class="animation-gallery">
+        <figure>
+          <div class="animation-frame"><video id="pick-and-place" data-project-loop data-br-no-skeleton src="assets/mindos/pick-and-place.mp4" poster="assets/mindos/pick-and-place-poster.jpg" width="640" height="640" muted loop playsinline controls preload="none" aria-label="Pick up and place a 3D reference in the MindOS workspace" aria-describedby="pick-caption"></video></div>
+          <figcaption id="pick-caption"><h3>Give a thought a place</h3><p>Take a reference from the collection and place it in the space around you. A 3D object becomes something you can position, return to, and build an idea around.</p></figcaption>
+        </figure>
+        <figure>
+          <div class="animation-frame"><video id="anchor" data-project-loop data-br-no-skeleton src="assets/mindos/anchor.mp4" poster="assets/mindos/anchor-poster.jpg" width="640" height="640" muted loop playsinline controls preload="none" aria-label="Anchor a lightbulb representing an idea in virtual space" aria-describedby="anchor-caption"></video></div>
+          <figcaption id="anchor-caption"><h3>Anchor the idea</h3><p>A lightbulb gives the central idea a visible home. Position it in the workspace, then arrange the thoughts and references that help explain it.</p></figcaption>
+        </figure>
+        <figure>
+          <div class="animation-frame"><video id="connect" data-project-loop data-br-no-skeleton src="assets/mindos/connect.mp4" poster="assets/mindos/connect-poster.jpg" width="640" height="640" muted loop playsinline controls preload="none" aria-label="Connect books, web pages, and objects with visible lines" aria-describedby="connect-caption"></video></div>
+          <figcaption id="connect-caption"><h3>Make the connections visible</h3><p>Draw relationships between pieces of information. Books, web pages, and objects become a map someone else can explore, with the context behind the idea still attached.</p></figcaption>
+        </figure>
+        <figure>
+          <div class="animation-frame"><video id="scale" data-project-loop data-br-no-skeleton src="assets/mindos/scale.mp4" poster="assets/mindos/scale-poster.jpg" width="640" height="640" muted loop playsinline controls preload="none" aria-label="Expand and collapse a connected model with two-handed gestures" aria-describedby="scale-caption"></video></div>
+          <figcaption id="scale-caption"><h3>Change your perspective</h3><p>Use both hands to change the scale of the model. Expand a connected world to explore its detail, then bring it back down to see how the pieces fit together.</p></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="mindos-talk" aria-labelledby="talk-heading">
+      <h2 id="talk-heading">The future of sharing ideas</h2>
+      <p>Serban and I shared the question behind MindOS, the limitations we saw in familiar tools, and a demonstration of the workspace at TEDxSanFrancisco. The ambition was to let someone explore the depth of an idea through its connections.</p>
+      <figure class="project-walkthrough">
+        <div class="project-video">
+          <iframe src="https://www.youtube-nocookie.com/embed/yFmuxjGLdQI" title="The future of sharing ideas — Serban Porumbescu and Brett Red at TEDxSanFrancisco" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        </div>
+        <figcaption><span>TEDxSanFrancisco · 2016</span><a href="https://www.youtube.com/watch?v=yFmuxjGLdQI" target="_blank" rel="noopener noreferrer" aria-label="Watch the MindOS talk on YouTube (opens in a new tab)">Watch on YouTube ↗</a></figcaption>
+      </figure>
+    </section>
+
+    <footer class="project-footer"><span>© Brett Red</span><a href="/">More projects →</a></footer>
+  </main>
+</body>
+</html>

@@ -80,7 +80,7 @@ Numbering is reading order: Column 1 top→bottom, then Column 2, then Column 3.
 | 23 | **Reference Card** | Reference | linkedin.com/in/tedgoldstein | `img_21.png` | Testimonial — **Ted Goldstein** |
 | 24 | **Education Card** | Hello | — | `img_18.png` | chip "Hello" looks mislabeled (vs "Education") |
 | 25 | **Anthem** | Work | anthem.html | `img_22.jpg` | Anthem / Health OS case study |
-| 26 | **TedX** | Public Speaking | youtu.be/yFmuxjGLdQI | `img_19.png` | TEDx talk |
+| 26 | **TedX / MindOS** | — | /mindos | `assets/mindos/ideas.mp4` + MindOS/TEDx logos | Spatial thinking case study; runtime ID 22 |
 | 27 | **Wonder** | Work | makewonder.com/dash/ | `img_23.png` | Wonder Workshop |
 
 ---
@@ -96,3 +96,10 @@ Anthem · TedX · Wonder
 - **#10 / #17 Levels are duplicates** — identical name, link (`levels.html`) and cover (`img_13.png`); the runtime intentionally keeps only one visible.
 - **Repeated names** are by design in Framer but ambiguous in code: 4× "Reference Card", 2× "Levels". Disambiguated above by person/link/cover.
 - **Chip inconsistencies:** `#19 Cloud People` chip is lowercase "work"; `#24 Education Card` chip says "Hello" (probably should be "Education").
+
+## MindOS / TEDx
+
+- The existing TEDx card (runtime ID **22**, Framer name **TedX**) links to `/mindos`; its position in `CARD_ORDER` is unchanged.
+- Cover: the full original concept animation loops continuously in view. The supplied MindOS SVG appears, dissolves into the artwork, then returns across the loop seam; its opacity and scale follow the video clock. TEDx remains visible throughout. Reduced motion holds the MindOS logo; offscreen and hidden-tab playback pauses and resumes in sync.
+- Page: the existing Overview / Approach format, original concept animation, four interaction demos, and the existing YouTube video `yFmuxjGLdQI`. The local `TedX.mp4` is reference material only and is not shipped.
+- Assets and source notes: `export/assets/mindos/README.md`. Card styling and playback are isolated in `export/mindos.css` and `export/mindos-cover.js`.

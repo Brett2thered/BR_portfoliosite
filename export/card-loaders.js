@@ -12,7 +12,10 @@
   var posters = {
     'Brett Player': 'assets/brett-video-poster.jpg',
     'Cloud People': 'assets/cloud-people.webp',
-    'Triton Player': 'assets/triton-poster.jpg'
+    'Triton Player': 'assets/triton-poster.jpg',
+    // This short animation does not preload or play under reduced motion.
+    // Its poster is enough to reveal the complete MindOS card.
+    'TedX': 'assets/mindos/ideas-poster.jpg'
   };
 
   function imageReady(image) {
