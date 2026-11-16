@@ -4,6 +4,7 @@ Allow: /
 
 # Do not crawl archived or development-only files.
 Disallow: /assets/
+Allow: /assets/favicon.png
 Disallow: /index.html.bak
 Disallow: /index.html.prehover
 
