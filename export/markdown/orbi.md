@@ -8,11 +8,7 @@ Canonical: https://www.brett.red/orbi
 
 [← Back to all projects](https://www.brett.red/)
 
-Robotics concept · 2016
-
 # Orbi
-
-A body for AI.
 
 [Image: Original Orbi concept render with a field of luminous dots beneath its white shell](https://www.brett.red/assets/orbi/hello.webp)
 

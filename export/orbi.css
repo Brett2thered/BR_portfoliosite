@@ -1,3 +1,11 @@
+.orbi-logo-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .orbi-cover {
   display: block;
   position: relative;
@@ -19,25 +27,32 @@
   padding: 4cqw 5cqw;
   line-height: 1.1;
 }
-.orbi-cover-caption strong { font-size: clamp(26px, 8cqw, 66px); font-weight: 600; letter-spacing: -.065em; }
+.orbi-cover-caption img { display: block; width: clamp(60px, 16cqw, 116px); height: auto; }
 .orbi-cover-caption small { font-size: clamp(12px, 3.3cqw, 22px); }
 
 .orbi-intro {
-  display: grid;
-  grid-template-columns: 1fr 1.55fr;
-  align-items: center;
+  position: relative;
   margin: 24px 0 52px;
   overflow: hidden;
   border-radius: 20px;
   background: #343535;
   color: #fff;
 }
-.orbi-title { z-index: 1; padding: clamp(26px, 5vw, 64px); }
-.orbi-title p { margin: 0; }
-.orbi-title p:first-child { color: #e1e3df; font-size: 14px; }
-.orbi-title h1 { margin: 12px 0 0; color: inherit; font-size: clamp(72px, 9vw, 120px); line-height: 1; letter-spacing: -.045em; }
-.orbi-title p:last-child { margin-top: 10px; font-size: clamp(22px, 3vw, 34px); letter-spacing: -.04em; }
-.orbi-intro img { display: block; width: 100%; height: 100%; object-fit: cover; mask-image: linear-gradient(to right, transparent, black 15%); }
+.orbi-title {
+  position: absolute;
+  z-index: 1;
+  left: clamp(16px, 2.4vw, 28px);
+  bottom: clamp(16px, 2.4vw, 28px);
+  margin: 0;
+}
+.orbi-title img { display: block; width: clamp(64px, 7vw, 92px); height: auto; filter: invert(1); }
+.orbi-intro > img {
+  display: block;
+  width: 76%;
+  height: auto;
+  margin-left: auto;
+  mask-image: linear-gradient(to right, transparent 6%, black 24%);
+}
 .orbi-studies { margin: 48px 0 0; }
 .orbi-studies > div { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border-radius: 14px; overflow: hidden; background: #343535; }
 .orbi-studies img { display: block; width: 100%; height: auto; }
@@ -50,9 +65,8 @@
 }
 .orbi-embed iframe { display: block; width: 100%; height: clamp(560px, 74svh, 780px); border: 1px solid #d8d8d5; border-radius: 14px; }
 @media (max-width: 700px) {
-  .orbi-intro { grid-template-columns: 1fr; margin: 12px 0 36px; border-radius: 12px; }
-  .orbi-title { padding: 26px 26px 16px; }
-  .orbi-intro img { height: auto; mask-image: linear-gradient(to bottom, transparent, black 15%); }
+  .orbi-intro { margin: 12px 0 36px; border-radius: 12px; }
+  .orbi-intro > img { width: 100%; }
   .orbi-studies { margin-top: 32px; }
   .orbi-studies > div { grid-template-columns: 1fr; }
 }
