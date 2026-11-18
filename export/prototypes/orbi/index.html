@@ -1,0 +1,1662 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>orbi — spherical rover</title>
+<style>
+  :root{
+    --ink:#1b1b1b; --line:#5c5c5c; --mid:#8c8c8c; --soft:#b8b8b8; --hair:#e3e3e3; --paper:#fff; --accent:#ff5a1f;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Helvetica Neue", Helvetica, "Inter", Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{background:var(--paper);-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+
+  /* ───────── stage ───────── */
+  #stage{position:relative;height:100vh;height:100svh;min-height:520px;overflow:hidden;border-bottom:1px solid var(--hair);user-select:none;-webkit-user-select:none}
+  #gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;opacity:0;transition:opacity .9s ease .1s}
+  #gl.on{opacity:1}
+  #gl.dragging{cursor:grabbing}
+  #stage.drive #gl{cursor:crosshair}
+  #stage.view #gl{cursor:default}
+  #leaders{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  #leaders polyline{fill:none;stroke:var(--mid);stroke-width:.75}
+  #leaders circle{fill:var(--paper);stroke:var(--line);stroke-width:1}
+  #labels{position:absolute;inset:0;pointer-events:none}
+  .lbl{position:absolute;left:0;top:0;font-family:var(--mono);font-size:10.5px;line-height:1.35;letter-spacing:.02em;white-space:nowrap;will-change:transform}
+  .lbl .in{position:absolute;bottom:-7px;display:flex;gap:8px;align-items:baseline}
+  .lbl.l .in{left:6px}
+  .lbl.r .in{right:6px;flex-direction:row-reverse;text-align:right}
+  .lbl b{font-weight:500;color:var(--paper);background:var(--ink);padding:1px 4px;border-radius:2px;font-size:9.5px}
+  .lbl span{display:block;color:var(--ink)}
+  .lbl i{display:block;font-style:normal;color:var(--mid);position:absolute;top:19px;font-size:9.5px}
+  .lbl.l i{left:0}.lbl.r i{right:0}
+
+  .chrome{position:absolute;z-index:2;font-family:var(--mono);font-size:11px;letter-spacing:.03em;color:var(--line)}
+  #brand{left:28px;top:24px;display:flex;align-items:center;gap:14px}
+  #brand .mark{width:26px;height:26px;border:1.25px solid var(--ink);border-radius:50%;position:relative}
+  #brand .mark::before{content:"";position:absolute;inset:6px;border:1px solid var(--ink);border-radius:50%}
+  #brand .mark::after{content:"";position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;background:var(--accent);border-radius:50%}
+  #brand h1{font-family:var(--sans);font-size:20px;font-weight:500;letter-spacing:-.02em;margin:0;color:var(--ink);line-height:1}
+  #brand small{display:block;font-size:10px;color:var(--mid);margin-top:4px;letter-spacing:.06em}
+
+  #modes{right:28px;top:24px;display:flex;gap:10px;align-items:stretch}
+  .seg{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--paper)}
+  .seg button{padding:9px 14px 8px;display:flex;gap:8px;align-items:baseline;border-right:1px solid var(--line);transition:background .15s,color .15s}
+  .seg button:last-child{border-right:0}
+  .seg button em{font-style:normal;font-size:9px;color:var(--soft)}
+  .seg button:hover{background:#f5f5f5}
+  .seg button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+  .seg button[aria-pressed=true] em{color:var(--accent)}
+  #xray{border:1px solid var(--line);border-radius:4px;padding:9px 12px 8px;display:flex;gap:8px;align-items:center;background:var(--paper)}
+  #xray::before{content:"";width:8px;height:8px;border:1px solid var(--line);border-radius:50%}
+  #xray[aria-pressed=true]::before{background:var(--accent);border-color:var(--accent)}
+  #xray:hover{background:#f5f5f5}
+
+  #caption{left:28px;bottom:26px;max-width:340px}
+  #caption h2{font-family:var(--sans);font-weight:400;font-size:26px;line-height:1.08;letter-spacing:-.025em;color:var(--ink);margin:0 0 10px;text-transform:lowercase}
+  #caption p{margin:0;color:var(--mid);line-height:1.55;font-size:10.5px}
+  #caption kbd{font:inherit;border:1px solid var(--soft);border-radius:3px;padding:0 4px;color:var(--line)}
+
+  #hud{right:28px;bottom:26px;width:236px;border-top:1px solid var(--line);padding-top:10px;opacity:0;transform:translateY(8px);transition:opacity .4s,transform .4s;pointer-events:none}
+  #stage.drive #hud{opacity:1;transform:none}
+  #hud .row{display:flex;justify-content:space-between;padding:2px 0;font-size:10px}
+  #hud .row b{font-weight:400;color:var(--ink);font-variant-numeric:tabular-nums}
+  #hud .row .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:1px}
+  #bars{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;height:44px;align-items:end;margin:10px 0 4px;border-bottom:1px solid var(--hair)}
+  #bars div{background:var(--ink);height:1px;min-height:1px}
+  #hud .ticks{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;font-size:7.5px;color:var(--soft);text-align:center;margin-bottom:8px}
+
+  #stage .chrome,#stage .chrome *{transition:color .7s,border-color .7s,background-color .7s}
+  #stage.night{--paper:rgba(255,255,255,.5);--hair:rgba(0,0,0,.14);--mid:#3f3a34;--soft:#5f5952}
+  #stage.night .seg,#stage.night #xray{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  #stage.night .seg button[aria-pressed=true]{color:#fff}
+    #scroll{left:50%;bottom:22px;transform:translateX(-50%);font-size:9.5px;color:var(--soft);letter-spacing:.14em;text-align:center}
+  #scroll::after{content:"";display:block;width:1px;height:16px;background:var(--soft);margin:6px auto 0}
+  #stage.drive #scroll{display:none}
+
+  /* ───────── page ───────── */
+  main{max-width:1180px;margin:0 auto;padding:0 28px}
+  section{padding:88px 0;border-bottom:1px solid var(--hair)}
+  .eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--mid);display:flex;gap:14px;margin-bottom:34px}
+  .eyebrow b{color:var(--ink);font-weight:500}
+  .lede{display:grid;grid-template-columns:1.25fr 1fr;gap:64px;align-items:end}
+  .lede h2{font-size:clamp(38px,6vw,76px);font-weight:400;letter-spacing:-.045em;line-height:.96;margin:0;text-transform:lowercase}
+  .lede p{font-size:15px;line-height:1.6;color:var(--line);margin:0;max-width:44ch}
+  .three{border-top:1px solid var(--line)}
+  .three article{display:grid;grid-template-columns:1.35fr 1fr;grid-template-rows:auto auto;column-gap:64px;align-items:center;padding:30px 0;border-bottom:1px solid var(--hair)}
+  .three article:last-child{border-bottom:0}
+  .three svg{grid-row:1 / 3;width:100%;height:auto;display:block}
+  .three h3{align-self:end}.three article p{align-self:start;max-width:40ch}
+  .three svg *{vector-effect:non-scaling-stroke}
+  .ln{fill:none;stroke:var(--line);stroke-width:1}
+  .lf{fill:var(--paper);stroke:var(--line);stroke-width:1}
+  .ls{fill:none;stroke:var(--soft);stroke-width:1}
+  .ld{fill:none;stroke:var(--soft);stroke-width:1;stroke-dasharray:3 3}
+  .la{fill:none;stroke:var(--accent);stroke-width:1.25}
+  .le{fill:none;stroke:var(--paper);stroke-width:3.5}
+  .lp{fill:var(--ink);stroke:none}
+  .lt{font:5.4px var(--mono);fill:var(--mid);stroke:none;letter-spacing:.03em}
+  h3{font-size:19px;font-weight:500;letter-spacing:-.02em;margin:0 0 8px;text-transform:lowercase}
+  h3 small{font-family:var(--mono);font-size:10px;font-weight:400;color:var(--mid);margin-right:10px;letter-spacing:.04em}
+  article p{font-size:13.5px;line-height:1.6;color:var(--line);margin:0 0 20px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-left:1px solid var(--hair)}
+  .grid article{padding:24px 24px 8px;border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);min-height:190px}
+  .grid .num{font-family:var(--mono);font-size:34px;letter-spacing:-.04em;color:var(--ink);display:block;margin-bottom:26px;font-weight:300}
+  .grid .num sup{font-size:10px;letter-spacing:.04em;color:var(--mid);margin-left:6px;vertical-align:top;position:relative;top:8px}
+  .spec{display:grid;grid-template-columns:1fr 1fr;gap:0 64px;font-family:var(--mono);font-size:11.5px;border-top:1px solid var(--line)}
+  .spec div{display:flex;justify-content:space-between;gap:20px;padding:11px 0;border-bottom:1px solid var(--hair);color:var(--mid)}
+  .spec div b{font-weight:400;color:var(--ink);text-align:right}
+  .note{font-family:var(--mono);font-size:10px;color:var(--soft);margin-top:18px}
+  footer{max-width:1180px;margin:0 auto;padding:30px 28px 46px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--soft);letter-spacing:.05em}
+  #fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:var(--mid);text-align:center;padding:40px}
+
+  @media (max-width:860px){
+    #brand{left:16px;top:14px} #modes{right:16px;top:70px;left:16px;justify-content:space-between}
+    #stage.drive #caption{max-width:calc(100vw - 206px)}#stage.drive #caption p{font-size:9.5px}
+    .seg{flex:1}.seg button{flex:1;justify-content:center;padding:9px 6px 8px}
+    #caption{left:16px;bottom:20px;max-width:62vw}#caption h2{font-size:20px}
+    #hud{right:16px;bottom:20px;width:150px}#hud .ticks{display:none}
+    #scroll{display:none}
+    main{padding:0 18px} section{padding:56px 0}
+    .lede,.three,.grid,.spec{grid-template-columns:1fr}.lede{gap:24px}
+    .three article{grid-template-columns:1fr;padding:22px 0 6px}.three svg{grid-row:auto;margin-bottom:14px}
+    .lbl{font-size:9px}.lbl i{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <canvas id="gl"></canvas>
+  <svg id="leaders"></svg>
+  <div id="labels"></div>
+  <div id="fallback">this page needs webgl to draw orbi. everything else is on the page already, no connection required.</div>
+
+  <div class="chrome" id="brand">
+    <div class="mark"></div>
+    <div><h1>orbi</h1><small>OB–14 · SPHERICAL ROVER</small></div>
+  </div>
+
+  <div class="chrome" id="modes">
+    <div class="seg" role="group" aria-label="view mode">
+      <button data-mode="view" aria-pressed="true"><em>01</em>view</button>
+      <button data-mode="explode" aria-pressed="false"><em>02</em>exploded</button>
+      <button data-mode="drive" aria-pressed="false"><em>03</em>drive</button>
+    </div>
+    <button id="xray" aria-pressed="false">x-ray</button>
+  </div>
+
+  <div class="chrome" id="caption"><h2></h2><p></p></div>
+
+  <div class="chrome" id="hud">
+    <div class="row"><span><i class="dot"></i>actuator stroke</span><b id="h-act">0 / 14</b></div>
+    <div id="bars"></div>
+    <div class="ticks"></div>
+    <div class="row"><span>speed</span><b id="h-spd">0.00 m/s</b></div>
+    <div class="row"><span>elevation</span><b id="h-elv">+0 mm</b></div>
+    <div class="row"><span>control</span><b id="h-ctl">waiting</b></div>
+  </div>
+
+  <div class="chrome" id="scroll">SCROLL</div>
+</div>
+
+<main>
+  <section>
+    <div class="eyebrow"><b>00</b><span>CONCEPT</span></div>
+    <div class="lede">
+      <h2>a ball that<br>pushes back.</h2>
+      <p>orbi is a sealed sphere with no wheels, no legs and nothing sticking out. fourteen zipper-chain actuators sit inside it. each one pushes a round panel of the skin outward, and the sphere rolls away from the push. a low step is something to lever over.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow"><b>01</b><span>HOW IT MOVES</span></div>
+    <div class="three">
+      <article>
+        <svg viewBox="14 0 272 250" aria-hidden="true">
+          <path class="ls" d="M40 235.6 H260"/>
+          <rect class="lf" x="114" y="223" width="72" height="12.6"/>
+          <rect class="lf" x="139" y="169.6" width="22" height="53.4"/>
+          <rect class="lf" x="66" y="126" width="64.5" height="42" rx="4"/>
+          <rect class="lf" x="169.5" y="126" width="64.5" height="42" rx="4"/>
+          <rect class="lf" x="130.5" y="124" width="39" height="45.6"/>
+          <circle class="ls" cx="87.4" cy="140.7" r="2.9"/>
+          <circle class="ls" cx="94.6" cy="140.7" r="2.9"/>
+          <circle class="ls" cx="101.8" cy="140.7" r="2.9"/>
+          <circle class="ls" cx="109.0" cy="140.7" r="2.9"/>
+          <circle class="ls" cx="83.8" cy="147.0" r="2.9"/>
+          <circle class="ls" cx="91.0" cy="147.0" r="2.9"/>
+          <circle class="ls" cx="105.4" cy="147.0" r="2.9"/>
+          <circle class="ls" cx="112.6" cy="147.0" r="2.9"/>
+          <circle class="ls" cx="87.4" cy="153.3" r="2.9"/>
+          <circle class="ls" cx="94.6" cy="153.3" r="2.9"/>
+          <circle class="ls" cx="101.8" cy="153.3" r="2.9"/>
+          <circle class="ls" cx="109.0" cy="153.3" r="2.9"/>
+          <circle class="ls" cx="191.0" cy="140.7" r="2.9"/>
+          <circle class="ls" cx="198.2" cy="140.7" r="2.9"/>
+          <circle class="ls" cx="205.4" cy="140.7" r="2.9"/>
+          <circle class="ls" cx="212.6" cy="140.7" r="2.9"/>
+          <circle class="ls" cx="187.4" cy="147.0" r="2.9"/>
+          <circle class="ls" cx="194.6" cy="147.0" r="2.9"/>
+          <circle class="ls" cx="209.0" cy="147.0" r="2.9"/>
+          <circle class="ls" cx="216.2" cy="147.0" r="2.9"/>
+          <circle class="ls" cx="191.0" cy="153.3" r="2.9"/>
+          <circle class="ls" cx="198.2" cy="153.3" r="2.9"/>
+          <circle class="ls" cx="205.4" cy="153.3" r="2.9"/>
+          <circle class="ls" cx="212.6" cy="153.3" r="2.9"/>
+          <circle class="ln" cx="98.2" cy="147" r="1.8"/>
+          <circle class="ln" cx="201.8" cy="147" r="1.8"/>
+          <path class="ln" d="M72 158 H127 Q134 158 134 150 V124"/>
+          <path class="ln" d="M228 158 H173 Q166 158 166 150 V124"/>
+          <circle class="ln" cx="141.5" cy="146" r="6.6"/>
+          <circle class="ln" cx="158.5" cy="146" r="6.6"/>
+          <circle class="lf" cx="141.5" cy="146" r="1.8"/>
+          <circle class="lf" cx="158.5" cy="146" r="1.8"/>
+          <circle class="ld" cx="150" cy="146" r="17"/>
+          <rect class="lf" x="129.8" y="112.1" width="40.3" height="12.2"/>
+          <rect class="lf" x="134" y="42.1" width="4.7" height="16.2"/>
+          <rect class="lf" x="138.7" y="46.6" width="16.6" height="7.2"/>
+          <rect class="lf" x="161.3" y="51.1" width="4.7" height="16.2"/>
+          <rect class="lf" x="144.8" y="55.6" width="16.6" height="7.2"/>
+          <rect class="lf" x="134" y="60.1" width="4.7" height="16.2"/>
+          <rect class="lf" x="138.7" y="64.6" width="16.6" height="7.2"/>
+          <rect class="lf" x="161.3" y="69.1" width="4.7" height="16.2"/>
+          <rect class="lf" x="144.8" y="73.6" width="16.6" height="7.2"/>
+          <rect class="lf" x="134" y="78.1" width="4.7" height="16.2"/>
+          <rect class="lf" x="138.7" y="82.6" width="16.6" height="7.2"/>
+          <rect class="lf" x="161.3" y="87.1" width="4.7" height="16.2"/>
+          <rect class="lf" x="144.8" y="91.6" width="16.6" height="7.2"/>
+          <rect class="lf" x="134" y="96.1" width="4.7" height="16.2"/>
+          <rect class="lf" x="138.7" y="100.6" width="16.6" height="7.2"/>
+          <rect class="ls" x="161.3" y="105.1" width="4.7" height="16.2"/>
+          <rect class="ls" x="144.8" y="109.6" width="16.6" height="7.2"/>
+          <rect class="ls" x="134" y="114.1" width="4.7" height="16.2"/>
+          <rect class="ls" x="138.7" y="118.6" width="16.6" height="7.2"/>
+          <path class="lf" d="M21 52.2 A360 360 0 0 1 279 52.2 L274.5 63.9 A347.4 347.4 0 0 0 25.5 63.9 Z"/>
+          <rect class="lf" x="119.4" y="40.8" width="61.2" height="5.8"/>
+          <path class="la" d="M189.6 91.6 V55.6 M184.6 62.6 l5 -8 l5 8"/>
+          <path class="ls" d="M80 164 L60 174 L52 174"/>
+          <text class="lt" x="50" y="176" text-anchor="end">magazine</text>
+          <path class="ls" d="M164.6 143.5 L246 116 L252 116"/>
+          <text class="lt" x="254" y="118" text-anchor="start">sprocket</text>
+          <path class="ls" d="M133.8 80.8 L74 80.8"/>
+          <text class="lt" x="72" y="83.3" text-anchor="end">zipper column</text>
+          <path class="ls" d="M160 160 L246 203.2 L252 203.2"/>
+          <text class="lt" x="254" y="205.7" text-anchor="start">motor</text>
+          <text class="lt" x="254" y="230.4" text-anchor="start">core</text>
+          <text class="lt" x="40" y="23.2" text-anchor="start">panel</text>
+        </svg>
+        <h3><small>A</small>zip</h3>
+        <p>two toothed strands lie flat in the magazines either side of each drive block. a gearmotor turns a pair of sprockets that pull the strands together, their teeth lock, and they leave the top of the block as one rigid column that pushes a panel of the skin outward.</p>
+      </article>
+      <article>
+        <svg viewBox="0 46 300 176" aria-hidden="true">
+          <path class="ln" d="M10 202 H290"/>
+          <circle class="ld" cx="210" cy="138" r="64"/>
+          <circle class="lf" cx="118" cy="138" r="64"/>
+          <path class="le" d="M87 194 A64 64 0 0 1 57.5 158.8"/>
+          <path class="ls" d="M89.5 191.7 A60.8 60.8 0 0 1 60.2 156.8"/>
+          <circle class="lp" cx="57.6" cy="136.4" r=".85"/>
+          <circle class="lp" cx="59.7" cy="132" r=".85"/>
+          <circle class="lp" cx="61.8" cy="136.4" r=".85"/>
+          <circle class="lp" cx="64" cy="132" r=".85"/>
+          <circle class="lp" cx="66.1" cy="136.4" r=".85"/>
+          <circle class="lp" cx="68.2" cy="132" r=".85"/>
+          <circle class="lp" cx="70.3" cy="136.4" r=".85"/>
+          <circle class="lp" cx="72.5" cy="132" r=".85"/>
+          <circle class="lp" cx="74.6" cy="136.4" r=".85"/>
+          <circle class="lp" cx="76.7" cy="132" r=".85"/>
+          <circle class="lp" cx="78.8" cy="136.4" r=".85"/>
+          <circle class="lp" cx="80.9" cy="132" r=".85"/>
+          <circle class="lp" cx="83" cy="136.4" r=".85"/>
+          <circle class="lp" cx="85.2" cy="132" r=".85"/>
+          <circle class="lp" cx="87.3" cy="136.4" r=".85"/>
+          <circle class="lp" cx="89.4" cy="132" r=".85"/>
+          <circle class="lp" cx="91.5" cy="136.4" r=".85"/>
+          <circle class="lp" cx="93.6" cy="132" r=".85"/>
+          <circle class="lp" cx="95.7" cy="136.4" r=".85"/>
+          <circle class="lp" cx="97.9" cy="132" r=".85"/>
+          <circle class="lp" cx="100" cy="136.4" r=".85"/>
+          <circle class="lp" cx="102.1" cy="132" r=".85"/>
+          <circle class="lp" cx="104.2" cy="136.4" r=".85"/>
+          <circle class="lp" cx="106.4" cy="132" r=".85"/>
+          <circle class="lp" cx="108.5" cy="136.4" r=".85"/>
+          <circle class="lp" cx="110.6" cy="132" r=".85"/>
+          <circle class="lp" cx="112.7" cy="136.4" r=".85"/>
+          <circle class="lp" cx="114.8" cy="132" r=".85"/>
+          <circle class="lp" cx="116.9" cy="136.4" r=".85"/>
+          <circle class="lp" cx="119.1" cy="132" r=".85"/>
+          <circle class="lp" cx="121.2" cy="136.4" r=".85"/>
+          <circle class="lp" cx="123.3" cy="132" r=".85"/>
+          <circle class="lp" cx="125.4" cy="136.4" r=".85"/>
+          <circle class="lp" cx="127.5" cy="132" r=".85"/>
+          <circle class="lp" cx="129.6" cy="136.4" r=".85"/>
+          <circle class="lp" cx="131.8" cy="132" r=".85"/>
+          <circle class="lp" cx="133.9" cy="136.4" r=".85"/>
+          <circle class="lp" cx="136" cy="132" r=".85"/>
+          <circle class="lp" cx="138.1" cy="136.4" r=".85"/>
+          <circle class="lp" cx="140.3" cy="132" r=".85"/>
+          <circle class="lp" cx="142.4" cy="136.4" r=".85"/>
+          <circle class="lp" cx="144.5" cy="132" r=".85"/>
+          <circle class="lp" cx="146.6" cy="136.4" r=".85"/>
+          <circle class="lp" cx="148.7" cy="132" r=".85"/>
+          <circle class="lp" cx="150.8" cy="136.4" r=".85"/>
+          <circle class="lp" cx="153" cy="132" r=".85"/>
+          <circle class="lp" cx="155.1" cy="136.4" r=".85"/>
+          <circle class="lp" cx="157.2" cy="132" r=".85"/>
+          <circle class="lp" cx="159.3" cy="136.4" r=".85"/>
+          <circle class="lp" cx="161.4" cy="132" r=".85"/>
+          <circle class="lp" cx="163.5" cy="136.4" r=".85"/>
+          <circle class="lp" cx="165.7" cy="132" r=".85"/>
+          <circle class="lp" cx="167.8" cy="136.4" r=".85"/>
+          <circle class="lp" cx="169.9" cy="132" r=".85"/>
+          <circle class="lp" cx="172" cy="136.4" r=".85"/>
+          <circle class="lp" cx="174.2" cy="132" r=".85"/>
+          <circle class="lp" cx="176.3" cy="136.4" r=".85"/>
+          <circle class="lp" cx="178.4" cy="132" r=".85"/>
+          <circle class="ls" cx="118" cy="138" r="53.8"/>
+          <path class="ln" d="M86.9 160.6 L61.1 182.2"/>
+          <path class="ln" d="M90.3 164.7 L64.6 186.3"/>
+          <path class="ls" d="M87.3 161.2 L87.6 166 L82.9 164.9 L83.2 169.7 L78.5 168.6 L78.8 173.4 L74.1 172.3 L74.4 177.1 L69.7 176 L70 180.8 L65.3 179.7 L65.5 184.5"/>
+          <path class="lf" d="M95.9 144 L82.4 155.3 L94.8 170 L108.2 158.7 Z"/>
+          <circle class="ls" cx="94.7" cy="150" r="3.2"/>
+          <circle class="ls" cx="102.1" cy="158.9" r="3.2"/>
+          <circle class="ln" cx="88.3" cy="155.8" r="2.4"/>
+          <circle class="ln" cx="95.3" cy="164.2" r="2.4"/>
+          <path class="lf" d="M77.4 202 A64 64 0 0 1 47.9 166.9 L51.6 165.6 A60.2 60.2 0 0 0 79.3 198.6 Z"/>
+          <path class="ln" d="M58.7 179.4 L67 189.2"/>
+          <path class="ln" d="M81.5 125.7 L61.1 120.3"/>
+          <path class="ln" d="M80.2 130.9 L59.7 125.5"/>
+          <path class="ls" d="M81.3 126.4 L77.6 129.4 L75.8 124.9 L72 127.9 L70.2 123.5 L66.4 126.5 L64.6 122 L60.9 125"/>
+          <path class="lf" d="M100.3 123.4 L83.3 119 L78.4 137.5 L95.4 142 Z"/>
+          <circle class="ls" cx="94.7" cy="125.9" r="3.2"/>
+          <circle class="ls" cx="91.8" cy="137.1" r="3.2"/>
+          <circle class="ln" cx="86.3" cy="124" r="2.4"/>
+          <circle class="ln" cx="83.5" cy="134.6" r="2.4"/>
+          <path class="ln" d="M58.2 144.6 L54.4 145"/>
+          <path class="ln" d="M69.1 102.9 L66 100.7"/>
+          <path class="ln" d="M117.5 99.5 L115.8 78.5"/>
+          <path class="ln" d="M112.2 99.9 L110.4 78.9"/>
+          <path class="ls" d="M116.8 99.6 L112.7 97 L116.3 93.8 L112.2 91.3 L115.8 88.1 L111.8 85.5 L115.4 82.3 L111.3 79.8"/>
+          <path class="lf" d="M125.9 116.5 L124.4 98.9 L105.3 100.5 L106.7 118.1 Z"/>
+          <circle class="ls" cx="121.6" cy="112" r="3.2"/>
+          <circle class="ls" cx="110.2" cy="113" r="3.2"/>
+          <circle class="ln" cx="120.6" cy="103.4" r="2.4"/>
+          <circle class="ln" cx="109.8" cy="104.3" r="2.4"/>
+          <path class="ln" d="M91.9 83.8 L90.2 80.3"/>
+          <path class="ln" d="M134.9 80.3 L136 76.6"/>
+          <path class="ln" d="M149.1 115.4 L165.3 101.8"/>
+          <path class="ln" d="M145.7 111.3 L161.9 97.7"/>
+          <path class="ls" d="M148.7 114.8 L148.4 110 L153.1 111.1 L152.8 106.3 L157.5 107.4 L157.2 102.6 L161.9 103.7 L161.6 98.9"/>
+          <path class="lf" d="M140.1 132 L153.6 120.7 L141.2 106 L127.8 117.3 Z"/>
+          <circle class="ls" cx="141.3" cy="126" r="3.2"/>
+          <circle class="ls" cx="133.9" cy="117.1" r="3.2"/>
+          <circle class="ln" cx="147.7" cy="120.2" r="2.4"/>
+          <circle class="ln" cx="140.7" cy="111.8" r="2.4"/>
+          <path class="ln" d="M147.2 85.4 L149 82"/>
+          <path class="ln" d="M174.9 118.4 L178.5 117.2"/>
+          <path class="ln" d="M154.5 150.3 L174.9 155.7"/>
+          <path class="ln" d="M155.8 145.1 L176.3 150.5"/>
+          <path class="ls" d="M154.7 149.6 L158.4 146.6 L160.2 151.1 L164 148.1 L165.8 152.5 L169.6 149.5 L171.4 154 L175.1 151"/>
+          <path class="lf" d="M135.7 152.6 L152.7 157 L157.6 138.5 L140.6 134 Z"/>
+          <circle class="ls" cx="141.3" cy="150.1" r="3.2"/>
+          <circle class="ls" cx="144.2" cy="138.9" r="3.2"/>
+          <circle class="ln" cx="149.7" cy="152" r="2.4"/>
+          <circle class="ln" cx="152.5" cy="141.4" r="2.4"/>
+          <path class="ln" d="M177.8 131.4 L181.6 131"/>
+          <path class="ln" d="M166.9 173.1 L170 175.3"/>
+          <path class="ln" d="M118.5 176.5 L120.2 197.5"/>
+          <path class="ln" d="M123.8 176.1 L125.6 197.1"/>
+          <path class="ls" d="M119.2 176.4 L123.3 179 L119.7 182.2 L123.8 184.7 L120.2 187.9 L124.2 190.5 L120.6 193.7 L124.7 196.2"/>
+          <path class="lf" d="M110.1 159.5 L111.6 177.1 L130.7 175.5 L129.3 157.9 Z"/>
+          <circle class="ls" cx="114.4" cy="164" r="3.2"/>
+          <circle class="ls" cx="125.8" cy="163" r="3.2"/>
+          <circle class="ln" cx="115.4" cy="172.6" r="2.4"/>
+          <circle class="ln" cx="126.2" cy="171.7" r="2.4"/>
+          <path class="ln" d="M144.1 192.2 L145.8 195.7"/>
+          <path class="ln" d="M101.1 195.7 L100 199.4"/>
+          <circle class="lf" cx="118" cy="138" r="19.2"/>
+          <circle class="ln" cx="118" cy="138" r="2"/>
+          <path class="la" d="M128 62 A76 76 0 0 1 176 86 M166 83 l10 3 l-2 -10"/>
+          <path class="la" d="M190 138 H222 M214 133 l8 5 l-8 5"/>
+          <path class="ls" d="M60 188 L30 156 L24 156"/>
+          <text class="lt" x="12" y="148" text-anchor="start">panel</text>
+          <text class="lt" x="12" y="156.5" text-anchor="start">pushes</text>
+          <text class="lt" x="210" y="66" text-anchor="middle">then it coasts</text>
+        </svg>
+        <h3><small>B</small>push</h3>
+        <p>a panel on the low trailing side extends until it meets the floor and pushes. the sphere rolls away on that momentum and coasts. when it slows, the next panel round takes a turn. to stop, the three lowest panels come down and hold it.</p>
+      </article>
+      <article>
+        <svg viewBox="0 52 300 186" aria-hidden="true">
+          <path class="ln" d="M10 198 H172 V166 H292"/>
+          <path class="ld" d="M22 134 H116.6 A64 64 0 0 1 172 102 H288"/>
+          <circle class="lf" cx="135.3" cy="113.6" r="64"/>
+          <path class="le" d="M130.8 177.4 A64 64 0 0 1 89.3 158"/>
+          <path class="ls" d="M132.1 174.3 A60.8 60.8 0 0 1 90.8 155"/>
+          <circle class="lp" cx="74.9" cy="111.9" r=".85"/>
+          <circle class="lp" cx="77" cy="107.5" r=".85"/>
+          <circle class="lp" cx="79.1" cy="111.9" r=".85"/>
+          <circle class="lp" cx="81.3" cy="107.5" r=".85"/>
+          <circle class="lp" cx="83.4" cy="111.9" r=".85"/>
+          <circle class="lp" cx="85.5" cy="107.5" r=".85"/>
+          <circle class="lp" cx="87.6" cy="111.9" r=".85"/>
+          <circle class="lp" cx="89.8" cy="107.5" r=".85"/>
+          <circle class="lp" cx="91.9" cy="111.9" r=".85"/>
+          <circle class="lp" cx="94" cy="107.5" r=".85"/>
+          <circle class="lp" cx="96.1" cy="111.9" r=".85"/>
+          <circle class="lp" cx="98.2" cy="107.5" r=".85"/>
+          <circle class="lp" cx="100.3" cy="111.9" r=".85"/>
+          <circle class="lp" cx="102.5" cy="107.5" r=".85"/>
+          <circle class="lp" cx="104.6" cy="111.9" r=".85"/>
+          <circle class="lp" cx="106.7" cy="107.5" r=".85"/>
+          <circle class="lp" cx="108.8" cy="111.9" r=".85"/>
+          <circle class="lp" cx="110.9" cy="107.5" r=".85"/>
+          <circle class="lp" cx="113" cy="111.9" r=".85"/>
+          <circle class="lp" cx="115.2" cy="107.5" r=".85"/>
+          <circle class="lp" cx="117.3" cy="111.9" r=".85"/>
+          <circle class="lp" cx="119.4" cy="107.5" r=".85"/>
+          <circle class="lp" cx="121.5" cy="111.9" r=".85"/>
+          <circle class="lp" cx="123.6" cy="107.5" r=".85"/>
+          <circle class="lp" cx="125.7" cy="111.9" r=".85"/>
+          <circle class="lp" cx="127.9" cy="107.5" r=".85"/>
+          <circle class="lp" cx="130" cy="111.9" r=".85"/>
+          <circle class="lp" cx="132.1" cy="107.5" r=".85"/>
+          <circle class="lp" cx="134.2" cy="111.9" r=".85"/>
+          <circle class="lp" cx="136.4" cy="107.5" r=".85"/>
+          <circle class="lp" cx="138.5" cy="111.9" r=".85"/>
+          <circle class="lp" cx="140.6" cy="107.5" r=".85"/>
+          <circle class="lp" cx="142.7" cy="111.9" r=".85"/>
+          <circle class="lp" cx="144.8" cy="107.5" r=".85"/>
+          <circle class="lp" cx="146.9" cy="111.9" r=".85"/>
+          <circle class="lp" cx="149.1" cy="107.5" r=".85"/>
+          <circle class="lp" cx="151.2" cy="111.9" r=".85"/>
+          <circle class="lp" cx="153.3" cy="107.5" r=".85"/>
+          <circle class="lp" cx="155.4" cy="111.9" r=".85"/>
+          <circle class="lp" cx="157.5" cy="107.5" r=".85"/>
+          <circle class="lp" cx="159.6" cy="111.9" r=".85"/>
+          <circle class="lp" cx="161.8" cy="107.5" r=".85"/>
+          <circle class="lp" cx="163.9" cy="111.9" r=".85"/>
+          <circle class="lp" cx="166" cy="107.5" r=".85"/>
+          <circle class="lp" cx="168.1" cy="111.9" r=".85"/>
+          <circle class="lp" cx="170.3" cy="107.5" r=".85"/>
+          <circle class="lp" cx="172.4" cy="111.9" r=".85"/>
+          <circle class="lp" cx="174.5" cy="107.5" r=".85"/>
+          <circle class="lp" cx="176.6" cy="111.9" r=".85"/>
+          <circle class="lp" cx="178.7" cy="107.5" r=".85"/>
+          <circle class="lp" cx="180.8" cy="111.9" r=".85"/>
+          <circle class="lp" cx="183" cy="107.5" r=".85"/>
+          <circle class="lp" cx="185.1" cy="111.9" r=".85"/>
+          <circle class="lp" cx="187.2" cy="107.5" r=".85"/>
+          <circle class="lp" cx="189.3" cy="111.9" r=".85"/>
+          <circle class="lp" cx="191.4" cy="107.5" r=".85"/>
+          <circle class="lp" cx="193.5" cy="111.9" r=".85"/>
+          <circle class="lp" cx="195.7" cy="107.5" r=".85"/>
+          <circle class="ls" cx="135.3" cy="113.6" r="53.8"/>
+          <path class="ln" d="M116.6 147.2 L98.1 187"/>
+          <path class="ln" d="M121.5 149.5 L103 189.2"/>
+          <path class="ls" d="M117.3 147.6 L119.6 151.8 L114.9 152.8 L117.2 157 L112.5 158 L114.7 162.2 L110 163.2 L112.3 167.5 L107.6 168.4 L109.8 172.7 L105.2 173.7 L107.4 177.9 L102.7 178.9 L105 183.1 L100.3 184.1 L102.5 188.3"/>
+          <path class="lf" d="M117.8 128.4 L110.4 144.3 L127.8 152.4 L135.2 136.5 Z"/>
+          <circle class="ls" cx="119.3" cy="134.3" r="3.2"/>
+          <circle class="ls" cx="129.7" cy="139.2" r="3.2"/>
+          <circle class="ln" cx="115.9" cy="142.3" r="2.4"/>
+          <circle class="ln" cx="125.8" cy="146.9" r="2.4"/>
+          <path class="lf" d="M121.2 198 A64 64 0 0 1 79.7 178.6 L82.4 175.9 A60.2 60.2 0 0 0 121.5 194.2 Z"/>
+          <path class="ln" d="M94.7 185.4 L106.3 190.8"/>
+          <path class="ln" d="M97 117.8 L76.2 121.6"/>
+          <path class="ln" d="M98 123.1 L77.2 126.9"/>
+          <path class="ls" d="M97.2 118.6 L95 122.8 L91.5 119.6 L89.4 123.9 L85.8 120.6 L83.7 124.9 L80.2 121.6 L78 125.9"/>
+          <path class="lf" d="M113.1 107.8 L95.8 111 L99.2 129.9 L116.5 126.7 Z"/>
+          <circle class="ls" cx="109.1" cy="112.5" r="3.2"/>
+          <circle class="ls" cx="111.1" cy="123.8" r="3.2"/>
+          <circle class="ln" cx="100.6" cy="114.3" r="2.4"/>
+          <circle class="ln" cx="102.6" cy="125" r="2.4"/>
+          <path class="ln" d="M83.9 144.8 L80.6 146.8"/>
+          <path class="ln" d="M76.2 102.4 L72.4 101.7"/>
+          <path class="ln" d="M118.6 78.9 L108.1 60.5"/>
+          <path class="ln" d="M113.9 81.6 L103.5 63.2"/>
+          <path class="ls" d="M117.9 79.3 L113.2 78.7 L115.1 74.3 L110.3 73.7 L112.2 69.3 L107.5 68.7 L109.4 64.3 L104.6 63.7"/>
+          <path class="lf" d="M133.3 90.8 L124.6 75.5 L107.9 85 L116.6 100.3 Z"/>
+          <circle class="ls" cx="127.6" cy="88.5" r="3.2"/>
+          <circle class="ls" cx="117.6" cy="94.2" r="3.2"/>
+          <circle class="ln" cx="123.1" cy="81.1" r="2.4"/>
+          <circle class="ln" cx="113.6" cy="86.5" r="2.4"/>
+          <path class="ln" d="M88.7 75.5 L85.8 73"/>
+          <path class="ln" d="M126.2 54.1 L125.6 50.3"/>
+          <path class="ln" d="M154 79.9 L162.9 60.8"/>
+          <path class="ln" d="M149.1 77.6 L158 58.5"/>
+          <path class="ls" d="M153.3 79.6 L151 75.4 L155.7 74.4 L153.4 70.1 L158.1 69.1 L155.9 64.9 L160.6 63.9 L158.3 59.7"/>
+          <path class="lf" d="M152.8 98.8 L160.2 82.8 L142.8 74.7 L135.4 90.7 Z"/>
+          <circle class="ls" cx="151.3" cy="92.8" r="3.2"/>
+          <circle class="ls" cx="140.9" cy="87.9" r="3.2"/>
+          <circle class="ln" cx="154.7" cy="84.8" r="2.4"/>
+          <circle class="ln" cx="144.8" cy="80.2" r="2.4"/>
+          <path class="ln" d="M139.5 53.6 L139.8 49.7"/>
+          <path class="ln" d="M178.6 71.8 L181.3 69.1"/>
+          <path class="ln" d="M173.6 109.4 L194.3 105.6"/>
+          <path class="ln" d="M172.6 104.1 L193.4 100.3"/>
+          <path class="ls" d="M173.4 108.6 L175.6 104.3 L179.1 107.6 L181.2 103.3 L184.7 106.5 L186.9 102.2 L190.4 105.5 L192.6 101.2"/>
+          <path class="lf" d="M157.5 119.3 L174.8 116.2 L171.4 97.3 L154 100.4 Z"/>
+          <circle class="ls" cx="161.5" cy="114.7" r="3.2"/>
+          <circle class="ls" cx="159.4" cy="103.3" r="3.2"/>
+          <circle class="ln" cx="170" cy="112.8" r="2.4"/>
+          <circle class="ln" cx="168" cy="102.1" r="2.4"/>
+          <path class="ln" d="M186.7 82.3 L190 80.3"/>
+          <path class="ln" d="M194.4 124.7 L198.2 125.5"/>
+          <path class="ln" d="M152 148.3 L162.4 166.6"/>
+          <path class="ln" d="M156.7 145.6 L167.1 163.9"/>
+          <path class="ls" d="M152.6 147.9 L157.4 148.5 L155.5 152.9 L160.3 153.5 L158.4 157.9 L163.1 158.5 L161.2 162.9 L166 163.5"/>
+          <path class="lf" d="M137.3 136.4 L146 151.7 L162.7 142.2 L153.9 126.9 Z"/>
+          <circle class="ls" cx="143" cy="138.7" r="3.2"/>
+          <circle class="ls" cx="153" cy="133" r="3.2"/>
+          <circle class="ln" cx="147.5" cy="146" r="2.4"/>
+          <circle class="ln" cx="157" cy="140.6" r="2.4"/>
+          <path class="ln" d="M181.8 151.7 L184.8 154.1"/>
+          <path class="ln" d="M144.4 173 L145 176.8"/>
+          <circle class="lf" cx="135.3" cy="113.6" r="19.2"/>
+          <circle class="ln" cx="135.3" cy="113.6" r="2"/>
+          <circle class="la" cx="172" cy="166" r="4"/>
+          <path class="la" d="M202 80 h34 M228 75 l8 5 l-8 5"/>
+          <path class="ls" d="M177 170 L198 188 L204 188"/>
+          <text class="lt" x="207" y="190.5" text-anchor="start">pivots on the edge</text>
+          <path class="ls" d="M95.3 195 L34 214 L28 214"/>
+          <text class="lt" x="12" y="224" text-anchor="start">panel reaches the lower floor</text>
+        </svg>
+        <h3><small>C</small>climb</h3>
+        <p>at a step the shell catches the edge. a trailing panel keeps extending, down to the lower floor, and levers the sphere round the corner and up onto the tread.</p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow"><b>02</b><span>FEATURES</span></div>
+    <div class="grid">
+      <article><span class="num">14<sup>ACTUATORS</sup></span><h3>zipper-chain drive</h3><p>six on the faces of a cube and eight on its corners. whichever way the sphere is facing, at least three panels can reach the ground.</p></article>
+      <article><span class="num" id="n-px">1,900<sup>PIXELS</sup></span><h3>pixel skin</h3><p>rgb leds sit under the gloss-white skin and across every panel. only the lit pixels show. a level line holds steady while the body rolls under it.</p></article>
+      <article><span class="num">12<sup>PODS</sup></span><h3>sensor ring</h3><p>range and sound pods sit under the skin between the panels, on the twelve edge directions. nothing shows on the outside, and there is no blind side.</p></article>
+      <article><span class="num">14<sup>PADS</sup></span><h3>touch panels</h3><p>each panel measures the force it pushes with. the robot feels the ground it stands on, and feels a hand.</p></article>
+      <article><span class="num">360°<sup>HOLONOMIC</sup></span><h3>no front, no back</h3><p>it never has to turn round. heading is a choice of which panel fires next.</p></article>
+      <article><span class="num">0<sup>EXPOSED PARTS</sup></span><h3>sealed sphere</h3><p>with every panel home the surface is a closed ball. nothing to snag, nothing to pinch.</p></article>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow"><b>03</b><span>SPECIFICATION</span></div>
+    <div class="spec">
+      <div><span>form</span><b>sphere, ø 2 ft / 610 mm</b></div>
+      <div><span>actuator</span><b>interlocking rigid chain</b></div>
+      <div><span>port layout</span><b>6 face + 8 corner</b></div>
+      <div><span>panel</span><b>42° spherical cap</b></div>
+      <div><span>frame</span><b>26-hole exoskeleton</b></div>
+      <div><span>stroke</span><b>1.0 × radius</b></div>
+      <div><span>sensor pods</span><b>12, hidden under the skin</b></div>
+      <div><span>step height (shown)</span><b>8.4 in / 213 mm</b></div>
+      <div><span>display</span><b id="s-px">— pixels, full sphere</b></div>
+      <div><span>core</span><b>battery · compute · imu</b></div>
+    </div>
+    <p class="note">geometry follows the obi frame model (14 large ports, 12 small). ratios are taken from the 3d model on this page.</p>
+  </section>
+</main>
+<footer><span>ORBI · OB–14</span><span>RENDERED LIVE</span></footer>
+
+<script type="importmap">
+{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+
+const V3 = THREE.Vector3, DEG = Math.PI/180;
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const sstep = (a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
+const damp = (v,g,k,dt)=>v+(g-v)*(1-Math.exp(-k*dt));
+
+const stage = document.getElementById('stage');
+const canvas = document.getElementById('gl');
+let renderer;
+try{ renderer = new THREE.WebGLRenderer({canvas,antialias:true}); }
+catch(e){ document.getElementById('fallback').style.display='flex'; throw e; }
+const DPR = Math.min(window.devicePixelRatio||1,2);
+renderer.setPixelRatio(DPR);
+renderer.setClearColor(0xffffff,1);
+
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(-1,1,1,-1,0.1,600);
+
+/* ───────────────── constants ───────────────── */
+const R=1, PAD_ANG=21*DEG, SKIN_HOLE=21.7*DEG, FRAME_HOLE=25*DEG, POD_HOLE=4.4*DEG;
+const FR_O=0.87, FR_I=0.81, CORE_D=0.29, HEAD_Y=0.632, TIP_Y=0.93, EXT_MAX=1.0, PITCH=0.05;
+const Y = new V3(0,1,0);
+const AXES=[], SENS=[];
+for(const s of [1,-1]){AXES.push(new V3(s,0,0),new V3(0,s,0),new V3(0,0,s));}
+for(const x of [1,-1])for(const y of [1,-1])for(const z of [1,-1])AXES.push(new V3(x,y,z).normalize());
+for(const a of [1,-1])for(const b of [1,-1]){SENS.push(new V3(a,b,0).normalize(),new V3(a,0,b).normalize(),new V3(0,a,b).normalize());}
+const NA = AXES.length;
+
+/* ───────────────── materials ───────────────── */
+const COL={line:0x555555,soft:0xb0b0b0,accent:0xff5a1f};
+const uRes={value:new THREE.Vector2(1,1)}, uPPU={value:100};
+const M={
+  fill:new THREE.MeshBasicMaterial({color:0xffffff,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1}),
+  fill2:new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1}),
+  line:new THREE.LineBasicMaterial({color:COL.line}),
+  soft:new THREE.LineBasicMaterial({color:COL.soft}),
+  accent:new THREE.LineBasicMaterial({color:COL.accent}),
+  hull:new THREE.ShaderMaterial({
+    side:THREE.BackSide,
+    uniforms:{uPx:{value:1.15*DPR},uRes,uColor:{value:new THREE.Color(COL.line)}},
+    vertexShader:`uniform float uPx;uniform vec2 uRes;
+      void main(){vec4 c=projectionMatrix*modelViewMatrix*vec4(position,1.);
+        vec3 n=normalMatrix*normal;vec2 d=(projectionMatrix*vec4(n,0.)).xy*uRes;
+        d=d/max(length(d),1e-5);c.xy+=d*uPx*2./uRes*c.w;gl_Position=c;}`,
+    fragmentShader:`uniform vec3 uColor;void main(){gl_FragColor=vec4(uColor,1.);}`
+  })
+};
+
+function solid(geo,o={}){
+  const g=new THREE.Group();
+  const fill=new THREE.Mesh(geo,M.fill); g.add(fill); g.userData.fill=fill;
+  if(o.edges!==false) g.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo,o.thr||28),o.soft?M.soft:M.line));
+  if(o.hull!==false){const h=new THREE.Mesh(geo,M.hull); g.add(h); g.userData.hull=h;}
+  return g;
+}
+const lathe=(pts,seg=40)=>new THREE.LatheGeometry(pts.map(p=>new THREE.Vector2(p[0],p[1])),seg);
+const box=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
+function circleLine(r,y,seg=64){
+  const p=[];for(let i=0;i<seg;i++){const a=i/seg*6.28318,b=(i+1)/seg*6.28318;p.push(r*Math.cos(a),y,r*Math.sin(a),r*Math.cos(b),y,r*Math.sin(b));}
+  return p;
+}
+const lineGeo=arr=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(arr,3));return g;};
+
+/* shell with circular ports — holes are cut and outlined in the fragment shader */
+function shellMat(holes,sens){
+  const H=[],A=[];
+  for(let i=0;i<26;i++){H.push(holes[i]?holes[i].d.clone():new V3(0,1,0));A.push(holes[i]?holes[i].a:-1);}
+  return new THREE.ShaderMaterial({
+    side:THREE.DoubleSide,transparent:true,
+    uniforms:{uH:{value:H},uA:{value:A},uNH:{value:holes.length},uS:{value:SENS},uSens:{value:sens?1:0},
+      uPPU,uR:{value:1},uLW:{value:1.25*DPR},uFill:{value:1},uLine:{value:new THREE.Color(COL.line)},uSoft:{value:new THREE.Color(COL.soft)}},
+    vertexShader:`varying vec3 vDir;varying vec3 vN;
+      void main(){vDir=position;vN=normalMatrix*normal;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader:`uniform vec3 uH[26];uniform float uA[26];uniform int uNH;uniform vec3 uS[12];uniform float uSens;
+      uniform float uPPU,uR,uLW,uFill;uniform vec3 uLine,uSoft;varying vec3 vDir;varying vec3 vN;
+      void main(){
+        vec3 d=normalize(vDir);
+        float m=10.;
+        for(int i=0;i<26;i++){if(i>=uNH)break;m=min(m,acos(clamp(dot(d,uH[i]),-1.,1.))-uA[i]);}
+        if(m<0.)discard;
+        float line=1.-smoothstep(uLW-.6,uLW+.6,m/max(length(vec2(dFdx(m),dFdy(m))),1e-6));
+        float nz=abs(normalize(vN).z);
+        float rim=uR*uPPU*(1.-sqrt(max(0.,1.-nz*nz)));
+        line=max(line,1.-smoothstep(uLW-.5,uLW+.7,rim));
+        float soft=0.;
+        if(uSens>.5){for(int i=0;i<12;i++){float a=acos(clamp(dot(d,uS[i]),-1.,1.));if(a>.08)continue;float aw=max(length(vec2(dFdx(a),dFdy(a))),1e-6);
+          soft=max(soft,1.-smoothstep(.5,1.4,abs(a-.040)/aw));
+          line=max(line,1.-smoothstep(-.6,.6,(a-.013)/aw));}}
+        float back=gl_FrontFacing?1.:.4;
+        vec3 col=mix(vec3(1.),uSoft,soft*(1.-line));col=mix(col,uLine,line);
+        float ink=max(line,soft*.9);
+        gl_FragColor=vec4(col,max(uFill,ink*mix(back,1.,uFill)));
+      }`
+  });
+}
+const sphereGeo=new THREE.SphereGeometry(1,96,64);
+function shell(radius,holes,sens){
+  const mat=shellMat(holes,sens); mat.uniforms.uR.value=radius;
+  const m=new THREE.Mesh(sphereGeo,mat); m.scale.setScalar(radius); return m;
+}
+
+/* ───────────────── robot ───────────────── */
+const starG=new THREE.Group(), frameG=new THREE.Group(), skinG=new THREE.Group();
+scene.add(starG,frameG,skinG);
+
+// core — truncated octahedron: one face per actuator
+{
+  const k=0.732*CORE_D,pts=[];
+  for(const s of [1,-1])for(const t of [1,-1]){
+    pts.push(new V3(s*CORE_D,t*k,0),new V3(s*CORE_D,0,t*k),new V3(t*k,s*CORE_D,0),new V3(0,s*CORE_D,t*k),new V3(t*k,0,s*CORE_D),new V3(0,t*k,s*CORE_D));
+  }
+  starG.add(solid(new ConvexGeometry(pts),{thr:5}));
+}
+
+// shared actuator geometry
+const padGeo=(()=>{const Ri=R-0.035,p=[],n=14;
+  for(let i=0;i<=n;i++){const a=PAD_ANG*i/n;p.push([Ri*Math.sin(a),Ri*Math.cos(a)]);}
+  for(let i=n;i>=0;i--){const a=PAD_ANG*i/n;p.push([R*Math.sin(a),R*Math.cos(a)]);}
+  p[0][0]=0;p[p.length-1][0]=0;return lathe(p,56);})();
+const flangeGeo=lathe([[0,TIP_Y],[0.085,TIP_Y],[0.085,0.948],[0.12,0.958],[0.12,0.966],[0,0.966]],32);
+const motorGeo=lathe([[0,0],[0.052,0],[0.052,0.012],[0.047,0.012],[0.047,0.084],[0.052,0.084],[0.052,0.096],[0.03,0.096],[0.03,0.118],[0,0.118]],28);
+const podGeo=lathe([[0,FR_I-0.01],[0.046,FR_I-0.01],[0.046,0.935],[0.03,0.962],[0,0.962]],24);
+const padRingGeo=lineGeo([...circleLine(1.002*Math.sin(13*DEG),1.002*Math.cos(13*DEG)),...circleLine(1.002*Math.sin(2.6*DEG),1.002*Math.cos(2.6*DEG),24)]);
+// zip chain actuator, after the catalogue drawing at half size (ZU = feet per catalogue millimetre):
+// a 65 x 76 x 36 drive block with the input shaft through it 45 above its base, a chain magazine of length A
+// either side (B = 2A + 65 = 280), and the chain (18.7 x 21) leaving through the top face
+const ZU=0.5/304.8,ZA=107.5,ZTOP=HEAD_Y,ZBOT=ZTOP-76*ZU,ZMID=ZBOT+38*ZU,ZSH=ZBOT+45*ZU;
+const zcaMotorGeo=new THREE.CylinderGeometry(28*ZU,28*ZU,100*ZU,24).rotateZ(Math.PI/2);
+const ringPts=(p,cx,cy,r,seg,z)=>{for(let i=0;i<seg;i++){const a=i/seg*6.28318,b=(i+1)/seg*6.28318;p.push(cx+r*Math.cos(a),cy+r*Math.sin(a),z,cx+r*Math.cos(b),cy+r*Math.sin(b),z);}};
+// what is on its faces: the dimpled magazine covers with their bolts, the round cover and bolt square of the drive block, the chain slot
+const zcaArtGeo=(()=>{const p=[];
+  for(const z of [15.5*ZU,-15.5*ZU])for(const sx of [-1,1]){const cx=sx*(32.5+ZA/2)*ZU;
+    for(const [dx,dy] of [[-18,10.4],[-6,10.4],[6,10.4],[18,10.4],[-24,0],[-12,0],[12,0],[24,0],[-18,-10.4],[-6,-10.4],[6,-10.4],[18,-10.4]])ringPts(p,cx+dx*ZU,ZMID+dy*ZU,5*ZU,12,z);
+    ringPts(p,cx,ZMID,3*ZU,8,z);
+    for(const bx of [-1,1])for(const by of [-1,1])ringPts(p,cx+bx*(ZA/2-8)*ZU,ZMID+by*28*ZU,2.6*ZU,8,z);}
+  const zb=-18.5*ZU;ringPts(p,0,ZSH,17*ZU,28,zb);ringPts(p,0,ZSH,5*ZU,10,zb);
+  for(const bx of [-1,1])for(const by of [0,1])ringPts(p,bx*27.5*ZU,ZBOT+(13+by*57)*ZU,2.4*ZU,8,zb);
+  const sy=ZTOP+0.0008,sx2=9.35*ZU,sz=10.5*ZU;p.push(-sx2,sy,-sz,sx2,sy,-sz,sx2,sy,-sz,sx2,sy,sz,sx2,sy,sz,-sx2,sy,sz,-sx2,sy,sz,-sx2,sy,-sz);
+  return lineGeo(p);})();
+// the zipper: two strands of linked back-plates, each with teeth that reach across and lock between the other's
+const COL_LEN=(TIP_Y-HEAD_Y)+EXT_MAX+0.1;
+const colGeo=(()=>{const CP=0.024,parts=[],n=Math.ceil(COL_LEN/CP);          // 18.7 wide, 21 deep, at half size
+  const add=(w,h,d,x,y,z=0)=>{const g=box(w,h,d);g.translate(x,y,z);parts.push(g);};
+  for(let k=0;k<n;k++){
+    const yl=TIP_Y-(k+0.5)*CP,yr=yl-CP/2;
+    add(0.006,CP*0.9,0.0344,-0.0124,yl);add(0.019,CP*0.4,0.026,-0.003,yl);            // left link + tooth
+    add(0.006,CP*0.9,0.0344,0.0124,yr);add(0.019,CP*0.4,0.026,0.003,yr);              // right link + tooth
+    add(0.003,0.004,0.039,-0.0124,yl+CP*0.5);add(0.003,0.004,0.039,0.0124,yr+CP*0.5);   // hinge pins
+  }
+  return mergeGeometries(parts);})();
+const colEdges=new THREE.EdgesGeometry(colGeo,20);
+const colShader=(color,offset)=>new THREE.ShaderMaterial({
+  uniforms:{uExt:{value:0},uHead:{value:HEAD_Y},uColor:{value:new THREE.Color(color)}},
+  polygonOffset:offset,polygonOffsetFactor:1,polygonOffsetUnits:1,
+  vertexShader:`uniform float uExt;varying float vY;void main(){vec3 p=position;p.y+=uExt;vY=p.y;gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}`,
+  fragmentShader:`uniform float uHead;uniform vec3 uColor;varying float vY;void main(){if(vY<uHead)discard;gl_FragColor=vec4(uColor,1.);}`
+});
+
+// pixels
+const pixU={uRot:{value:new THREE.Matrix3()},uTime:{value:0},uDpr:{value:DPR}};
+const LED_FN=`
+  float ledBand(vec3 w,float t){float b=1.-smoothstep(.06,.09,abs(w.y-.2*sin(t*.7)));return b*(.45+.55*smoothstep(.1,1.,cos(atan(w.z,w.x)-t*1.3)));}`;
+// the room's light show: five patterns, seven seconds each, fading out and in through dark.
+// w = the led's direction in the room (so a pattern stays level while the ball rolls), id = its place on the skin,
+// uFace = the level direction from the ball to the camera, so the face looks at whoever is watching
+const LED_GW=2.4,LED_GJ=4.8,LED_SEG=7,LED_COL=[[.3,1,.92],[.3,.7,1],[.55,1,.95],[.6,.65,1],[1,.8,.6]];
+const LED_SHOW=`
+  float ledHash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
+  vec3 ledHue(float h){return .55+.45*cos(6.2832*(h+vec3(0.,.33,.67)));}
+  vec3 ledPat(int k,vec3 w,vec3 id,float t,float tl){
+    vec3 p=vec3(dot(w,vec3(uFace.z,0.,-uFace.x)),w.y,dot(w,uFace));float front=smoothstep(.1,.25,p.z);
+    if(k==0)return vec3(.3,1.,.92)*ledBand(w,t);
+    if(k==1){                                   // ripples: rings of light run from the crown down to the floor
+      float a=acos(clamp(w.y,-1.,1.));float r=pow(.5+.5*cos(a*7.-t*2.6),5.);
+      return mix(vec3(.25,1.,.9),vec3(.3,.5,1.),a/3.1416)*r*smoothstep(0.,.15,a)*.85;}
+    if(k==2){                                   // a face: it blinks, the mouth opens into a smile, a hand waves
+      float smile=smoothstep(.7,1.9,tl),blink=1.-.85*smoothstep(.93,1.,sin(t*1.9+1.));
+      vec2 e=vec2(abs(p.x)-.3,(p.y-.24-.03*smile)/blink);float eyes=1.-smoothstep(.07,.11,length(e));
+      vec2 m=p.xy-vec2(0.,.02);float sp=.2+.8*smile;
+      float mouth=(1.-smoothstep(.03,.06,abs(length(m)-.36)))*(1.-smoothstep(sp,sp+.1,atan(abs(m.x),-m.y)));
+      float th=.25+.3*sin(t*7.),wv=smoothstep(1.7,2.4,tl)*(1.-smoothstep(5.4,6.,tl));
+      float hand=(1.-smoothstep(.08,.13,length(p.xy-vec2(cos(th),sin(th))*.82)))*wv;
+      return (vec3(.55,1.,.95)*(eyes+mouth)+vec3(1.,.85,.5)*hand)*front;}
+    if(k==3){                                   // thinking: three comets orbit the whole sphere on slowly turning rings, over a faint drifting swirl
+      float c=.07*(.5+.5*sin(atan(w.z,w.x)*3.+w.y*5.-t*1.6));
+      for(int i=0;i<3;i++){float fi=float(i);
+        vec3 n=normalize(vec3(sin(t*.22+fi*2.1),.25+fi*.55,cos(t*.22+fi*2.1)));vec3 u=normalize(cross(n,vec3(0.,1.,0.))),v=cross(n,u);
+        float ring=1.-smoothstep(.04,.085,abs(dot(w,n)));
+        float tail=pow(fract((atan(dot(w,v),dot(w,u))-t*(2.2+fi*.5))/6.2832+fi*.33),3.);
+        c+=ring*(.06+.94*tail);}
+      return vec3(.6,.65,1.)*min(c,1.2);}
+    // celebration: every led twinkles in its own colour, and rings of colour burst open like fireworks
+    float h=ledHash(floor(id*40.+.5));vec3 c=ledHue(h)*pow(max(0.,sin(t*(3.+5.*h)+h*60.)),10.)*.8;
+    for(int i=0;i<3;i++){float fi=float(i),s=t*.55+fi*.37,ph=fract(s),n=floor(s);
+      vec3 o=normalize(vec3(sin(n*12.9+fi*4.),.3+.5*sin(n*7.3+fi),cos(n*5.1+fi*2.))+uFace*1.2);
+      float d=acos(clamp(dot(w,o),-1.,1.));
+      c+=(1.-smoothstep(0.,.09,abs(d-ph*1.3)))*(1.-ph)*(1.-ph)*ledHue(fi*.31+n*.17)*1.3;}
+    return c;}
+  vec3 ledShow(vec3 w,vec3 id,float t){const float SEG=${LED_SEG}.,GW=${LED_GW},GJ=${LED_GJ},G=GW*3.+GJ;float tc=mod(t,G+5.*SEG);
+    if(tc<G){                                   // the loop opens with hello, one language after another, written across the side facing the camera
+      float wi=tc<GW?0.:tc<GW+GJ?1.:tc<2.*GW+GJ?2.:3.,st=wi<.5?0.:wi<1.5?GW:wi<2.5?GW+GJ:2.*GW+GJ,L=wi==1.?GJ:GW,gl=tc-st,sc=wi==1.?2.:1.;
+      float lon=atan(dot(w,vec3(uFace.z,0.,-uFace.x)),dot(w,uFace));
+      vec2 uv=vec2(lon/(2.6*sc)+.5,(asin(clamp(w.y,-1.,1.))-.06)/(.975*sc)+.5);
+      if(wi==1.)uv.x+=mix(-.42,.42,smoothstep(.2,L-.2,gl));   // the japanese is five wide characters: drawn twice the size and slid across, right to left
+      if(abs(uv.x-.5)>.49||abs(uv.y-.5)>.47)return vec3(0.);
+      return vec3(.75,1.,.95)*smoothstep(.3,.6,texture2D(uTxt,vec2(uv.x,(3.-wi+uv.y)/4.)).r)*(1.-smoothstep(1.05,1.3,abs(lon)))*smoothstep(0.,.45,gl)*(1.-smoothstep(L-.45,L,gl));}
+    float s=(tc-G)/SEG,tl=fract(s)*SEG;
+    return ledPat(int(mod(floor(s),5.)),w,id,t,tl)*smoothstep(0.,.7,tl)*(1.-smoothstep(SEG-.7,SEG,tl));}`;
+const pixMat=new THREE.ShaderMaterial({uniforms:pixU,
+  vertexShader:`attribute vec3 aDir;uniform mat3 uRot;uniform float uTime,uDpr;varying float vLit;`+LED_FN+`
+    void main(){
+      vec3 dir=normalize(uRot*aDir);
+      float facing=smoothstep(.04,.3,(mat3(viewMatrix)*dir).z);
+      vLit=ledBand(dir,uTime);
+      gl_PointSize=uDpr*3.5*smoothstep(.03,.45,vLit)*facing;
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);
+    }`,
+  fragmentShader:`varying float vLit;
+    void main(){vec2 c=gl_PointCoord-.5;if(dot(c,c)>.25)discard;gl_FragColor=vec4(vec3(.1),1.);}`
+});
+const pixSkin=[],pixPad=AXES.map(()=>[]);
+{
+  for(let lat=-84;lat<=84.01;lat+=4){
+    const cl=Math.cos(lat*DEG),sl=Math.sin(lat*DEG),n=Math.max(6,Math.round(84*cl)),off=(Math.round(lat/4)%2)?0.5:0;
+    for(let i=0;i<n;i++){
+      const lo=(i+off)/n*6.28318,d=new V3(cl*Math.cos(lo),sl,cl*Math.sin(lo));
+      let best=-1,bd=-2;AXES.forEach((a,j)=>{const t=a.dot(d);if(t>bd){bd=t;best=j;}});
+      const ang=Math.acos(clamp(bd,-1,1));
+      if(ang<PAD_ANG-1.6*DEG){pixPad[best].push(d);continue;}
+      if(ang<SKIN_HOLE+1.6*DEG)continue;
+      if(SENS.some(s=>s.dot(d)>Math.cos(3.6*DEG)))continue;
+      pixSkin.push(d);
+    }
+  }
+}
+const PIX_COUNT=pixSkin.length+pixPad.reduce((s,a)=>s+a.length,0);
+function pointsFrom(dirs,invQ){
+  const p=[],a=[];const v=new V3();
+  for(const d of dirs){a.push(d.x,d.y,d.z);v.copy(d).multiplyScalar(R*1.004);if(invQ)v.applyQuaternion(invQ);p.push(v.x,v.y,v.z);}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('aDir',new THREE.Float32BufferAttribute(a,3));
+  const pts=new THREE.Points(g,pixMat);pts.frustumCulled=false;return pts;
+}
+
+// actuators
+const acts=AXES.map((axis,i)=>{
+  const g=new THREE.Group();g.quaternion.setFromUnitVectors(Y,axis);starG.add(g);
+  const mount=solid(box(37*ZU,ZBOT-CORE_D+0.02,30*ZU),{hull:false});mount.position.y=(ZBOT+CORE_D-0.02)/2;   // pedestal from the core to the block's base taps
+  const cas=solid(box(65*ZU,76*ZU,36*ZU));cas.position.y=ZMID;
+  const magL=solid(box(ZA*ZU,72*ZU,30*ZU)),magR=solid(box(ZA*ZU,72*ZU,30*ZU));
+  magL.position.set(-(32.5+ZA/2)*ZU,ZMID,0);magR.position.set((32.5+ZA/2)*ZU,ZMID,0);
+  const gbox=solid(box(60*ZU,60*ZU,50*ZU),{hull:false});gbox.position.set(0,ZSH,43*ZU);          // right-angle gearbox on the input shaft
+  const motor=solid(zcaMotorGeo);motor.position.set(-80*ZU,ZSH,43*ZU);                              // its motor lies along the magazine
+  const reelL=new THREE.Object3D(),reelR=reelL,gearL=reelL,gearR=reelL;                             // (no spools in this drive: the strands store flat)
+  const art=new THREE.LineSegments(zcaArtGeo,M.line);
+  const cf=colShader(0xffffff,true),cl=colShader(COL.line,false);
+  const colF=new THREE.Mesh(colGeo,cf),colL=new THREE.LineSegments(colEdges,cl);colF.frustumCulled=colL.frustumCulled=false;
+  const pad=new THREE.Group();
+  const padS=solid(padGeo),fl=solid(flangeGeo,{hull:false});
+  const ring=new THREE.LineSegments(padRingGeo,M.soft);
+  const px=pointsFrom(pixPad[i],g.quaternion.clone().invert());
+  pad.add(padS,fl,ring,px);
+  g.add(mount,cas,magL,magR,motor,gbox,art,colF,colL,pad);
+  return {g,axis,pad,padS,fl,reelL,reelR,gearL,gearR,cf,cl,ext:0,target:0,wAxis:new V3()};
+});
+
+// frame — exoskeleton with 14 ports + 12 pod holes
+{
+  const holes=[...AXES.map(d=>({d,a:FRAME_HOLE})),...SENS.map(d=>({d,a:POD_HOLE}))];
+  frameG.add(shell(FR_O,holes,false),shell(FR_I,holes,false));
+  const wall=(d,ang)=>{const h=(FR_O-FR_I)*Math.cos(ang);
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(FR_O*Math.sin(ang),FR_I*Math.sin(ang),h,ang>0.2?48:16,1,true),M.fill2);
+    m.quaternion.setFromUnitVectors(Y,d);m.position.copy(d).multiplyScalar((FR_O+FR_I)/2*Math.cos(ang));frameG.add(m);};
+  AXES.forEach(d=>wall(d,FRAME_HOLE));SENS.forEach(d=>wall(d,POD_HOLE));
+  SENS.forEach(d=>{const p=solid(podGeo);p.quaternion.setFromUnitVectors(Y,d);frameG.add(p);});
+}
+// skin
+const skin=shell(R,AXES.map(d=>({d,a:SKIN_HOLE})),false);
+skinG.add(skin,pointsFrom(pixSkin,null));
+
+/* ───────────────── world ───────────────── */
+const grid=new THREE.Mesh(new THREE.PlaneGeometry(600,600).rotateX(-Math.PI/2),new THREE.ShaderMaterial({
+  transparent:true,depthWrite:false,
+  uniforms:{uCenter:{value:new V3()},uAlpha:{value:1},uFade:{value:22}},
+  vertexShader:`varying vec3 vW;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
+  fragmentShader:`uniform vec3 uCenter;uniform float uAlpha,uFade;varying vec3 vW;
+    float g(vec2 p,float s){vec2 q=p/s;vec2 f=abs(fract(q-.5)-.5)/fwidth(q);return 1.-min(min(f.x,f.y),1.);}
+    void main(){vec2 p=vW.xz;float fade=1.-smoothstep(uFade*.35,uFade,distance(p,uCenter.xz));
+      float a=max(g(p,1.)*.10,g(p,5.)*.22)*fade*uAlpha;if(a<.003)discard;gl_FragColor=vec4(vec3(.15),a);}`
+}));
+grid.renderOrder=-1;scene.add(grid);
+
+const terrainG=new THREE.Group();scene.add(terrainG);
+const boxes=[],pipes=[],rayTargets=[];
+function addBox(x0,x1,z0,z1,h){
+  const geo=box(x1-x0,h,z1-z0);geo.translate(0,h/2,0);
+  const s=solid(geo,{thr:5});s.position.set((x0+x1)/2,0,(z0+z1)/2);s.scale.y=0.0001;s.visible=false;terrainG.add(s);
+  rayTargets.push(s.userData.fill);boxes.push({x0,x1,z0,z1,h,g:0,obj:s});
+}
+function addPipe(ax,az,bx,bz,c){
+  const len=Math.hypot(bx-ax,bz-az),geo=new THREE.CapsuleGeometry(c,len,8,24);
+  const s=solid(geo,{edges:false});
+  const rings=[];for(const y of [-len/2,-len/6,len/6,len/2])rings.push(...circleLine(c*1.003,y,40));
+  s.add(new THREE.LineSegments(lineGeo(rings),M.line));
+  s.quaternion.setFromUnitVectors(Y,new V3(bx-ax,0,bz-az).normalize());
+  s.position.set((ax+bx)/2,c,(az+bz)/2);s.visible=false;terrainG.add(s);
+  rayTargets.push(s.userData.fill);pipes.push({ax,az,bx,bz,c,g:0,obj:s});
+}
+// staircase → platform → side stairs
+addBox(4,5.6,-2.5,2.5,0.4);addBox(5.6,7.2,-2.5,2.5,0.8);addBox(7.2,8.8,-2.5,2.5,1.2);addBox(8.8,14.4,-2.5,2.5,1.6);
+addBox(10,14.4,2.5,4.1,1.2);addBox(10,14.4,4.1,5.7,0.8);addBox(10,14.4,5.7,7.3,0.4);
+// blocks + beams
+addBox(-4.8,-3.2,2.2,3.8,0.5);addBox(-7,-5,-2.6,-1.4,0.35);addBox(-2.6,-1.4,-5.6,-4.4,0.7);
+addBox(0.5,3.5,6,6.6,0.3);addBox(0.75,1.25,-10,-6.4,0.3);
+// rubble field
+{const hs=[.15,.35,.2,.45,.3,.1,.4,.25,.2,.45,.15,.3,.4,.2,.35,.1];
+ for(let i=0;i<4;i++)for(let j=0;j<4;j++)addBox(-9.5+i,-8.5+i,5+j,6+j,hs[i*4+j]);}
+// monoliths (too tall — the robot goes round)
+addBox(-11,-10,-6.5,-5.5,3);addBox(6.2,7.2,-7.4,-6.4,2.2);
+addPipe(3,-6,3,-2.6,0.3);addPipe(-5,9.6,-1.4,9.6,0.45);
+const obstacles=[...boxes,...pipes];
+
+function segDist(x,z,p){const vx=p.bx-p.ax,vz=p.bz-p.az,t=clamp(((x-p.ax)*vx+(z-p.az)*vz)/(vx*vx+vz*vz),0,1);return Math.hypot(x-p.ax-vx*t,z-p.az-vz*t);}
+function groundH(x,z){
+  let h=0;
+  for(const b of boxes){if(b.g>0&&x>=b.x0&&x<=b.x1&&z>=b.z0&&z<=b.z1)h=Math.max(h,b.h*b.g);}
+  for(const p of pipes){const c=p.c*p.g;if(c<=0)continue;const d=segDist(x,z,p);if(d<c)h=Math.max(h,c+Math.sqrt(c*c-d*d));}
+  return h;
+}
+// height of the sphere centre resting on the terrain at (x,z)
+function centerH(x,z){
+  let H=R;
+  for(const b of boxes){const t=b.h*b.g;if(t<=0)continue;
+    const dx=Math.max(b.x0-x,0,x-b.x1),dz=Math.max(b.z0-z,0,z-b.z1),d2=dx*dx+dz*dz;
+    if(d2<R*R)H=Math.max(H,t+Math.sqrt(R*R-d2));}
+  for(const p of pipes){const c=p.c*p.g;if(c<=0)continue;const d=segDist(x,z,p),rr=R+c;if(d<rr)H=Math.max(H,c+Math.sqrt(rr*rr-d*d));}
+  return H;
+}
+function resolveWalls(p,y,list){
+  for(const b of list){const t=b.h*b.g;if(t<=y)continue;
+    const cx=clamp(p.x,b.x0,b.x1),cz=clamp(p.z,b.z0,b.z1),dx=p.x-cx,dz=p.z-cz,d2=dx*dx+dz*dz;
+    if(d2<R*R&&d2>1e-8){const d=Math.sqrt(d2);p.x=cx+dx/d*R*1.0005;p.z=cz+dz/d*R*1.0005;}}   // a hair clear, so rounding cannot put it 'on' the wall's edge
+}
+
+// drive-mode overlays
+const reticle=new THREE.Group();
+reticle.add(new THREE.LineSegments(lineGeo([...circleLine(0.34,0,40),0.2,0,0,0.55,0,0,-0.2,0,0,-0.55,0,0,0,0,0.2,0,0,0.55,0,0,-0.2,0,0,-0.55]),M.accent));
+reticle.visible=false;scene.add(reticle);
+const TRAIL_N=700,trailArr=new Float32Array(TRAIL_N*3);let trailCount=0;
+const trailGeo=new THREE.BufferGeometry();trailGeo.setAttribute('position',new THREE.BufferAttribute(trailArr,3));
+const trail=new THREE.Line(trailGeo,M.soft);trail.frustumCulled=false;trail.visible=false;scene.add(trail);
+
+
+/* ───────────────── home — the dusk render (1 unit = 1 ft, robot ø 2 ft) ───────────────── */
+RectAreaLightUniformsLib.init();
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const home=new THREE.Scene();home.background=new THREE.Color(0x15110d);
+const pcam=new THREE.PerspectiveCamera(30,1,0.5,400);
+function canvasTex(w,h,draw,rep){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;
+  if(rep){t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rep[0],rep[1]);}return t;}
+let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+const std=(color,roughness,o={})=>new THREE.MeshStandardMaterial({color,roughness,...o});
+function put(geo,mat,x,y,z,o={}){const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=o.cast!==false;m.receiveShadow=o.recv!==false;
+  if(o.rx)m.rotation.x=o.rx;if(o.ry)m.rotation.y=o.ry;if(o.rz)m.rotation.z=o.rz;(o.to||home).add(m);return m;}
+const rbox=(w,h,d,r)=>new RoundedBoxGeometry(w,h,d,4,r);
+{
+  // floor — pale oak, mostly under a large rug
+  const wood=canvasTex(1024,1024,(g,w,h)=>{
+    const ph=64;for(let r=0;r<h/ph;r++){let x=-rnd()*300;while(x<w){const len=300+rnd()*380;
+      g.fillStyle=`hsl(${31+rnd()*5},${20+rnd()*8}%,${64+rnd()*7}%)`;g.fillRect(x,r*ph,len,ph);
+      for(let k=0;k<18;k++){g.strokeStyle=`rgba(${rnd()>.5?90:255},${rnd()>.5?70:240},50,${.02+rnd()*.04})`;g.lineWidth=.6+rnd();
+        const y=r*ph+rnd()*ph;g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x+len*.3,y+rnd()*5-2.5,x+len*.6,y+rnd()*5-2.5,x+len,y+rnd()*3-1.5);g.stroke();}
+      g.fillStyle='rgba(70,50,30,.35)';g.fillRect(x+len-1.2,r*ph,1.2,ph);x+=len;}
+      g.fillStyle='rgba(70,50,30,.3)';g.fillRect(0,r*ph,w,1.2);}
+  },[9,9]);
+  put(new THREE.PlaneGeometry(72,72).rotateX(-Math.PI/2),std(0xffffff,0.4,{map:wood,bumpMap:wood,bumpScale:0.6,envMapIntensity:.6}),0,0,-6,{cast:false});
+  const grey=(n,draw,rep)=>{const t=canvasTex(n,n,draw,rep);t.colorSpace=THREE.NoColorSpace;return t;};
+  const weave=rep=>grey(128,(g,w,h)=>{g.fillStyle='#808080';g.fillRect(0,0,w,h);
+    for(let y=0;y<h;y+=4)for(let x=0;x<w;x+=4){const v=((x+y)/4)%2?150+rnd()*60:70+rnd()*50;g.fillStyle=`rgb(${v},${v},${v})`;g.fillRect(x,y,4,2);g.fillStyle=`rgb(${255-v},${255-v},${255-v})`;g.fillRect(x,y+2,2,2);}},rep);
+  const pile=grey(256,(g,w,h)=>{g.fillStyle='#808080';g.fillRect(0,0,w,h);for(let i=0;i<14000;i++){const v=60+rnd()*140;g.fillStyle=`rgba(${v},${v},${v},.55)`;g.beginPath();g.arc(rnd()*w,rnd()*h,.6+rnd()*1.6,0,7);g.fill();}},[26,26]);
+  const plaster=grey(256,(g,w,h)=>{g.fillStyle='#808080';g.fillRect(0,0,w,h);for(let i=0;i<900;i++){const v=110+rnd()*40;g.fillStyle=`rgba(${v},${v},${v},.12)`;g.beginPath();g.ellipse(rnd()*w,rnd()*h,6+rnd()*22,3+rnd()*9,rnd()*3,0,7);g.fill();}},[5,3]);
+  const speck=canvasTex(256,256,(g,w,h)=>{g.fillStyle='#fff';g.fillRect(0,0,w,h);for(let i=0;i<9000;i++){g.fillStyle=`rgba(0,0,0,${rnd()*.09})`;g.fillRect(rnd()*w,rnd()*h,1.5,1.5);}},[6,5]);
+  const wallM=std(0xe9dfd0,0.88,{bumpMap:plaster,bumpScale:0.35}),ceilM=std(0xf0e8dc,0.95),darkM=std(0x151413,0.38),creamM=std(0xe8e1d4,1,{map:speck,bumpMap:weave([9,9]),bumpScale:1.2});
+  const glow=(r,g,b)=>{const m=new THREE.MeshBasicMaterial();m.color.setRGB(r,g,b);return m;};
+  const WZ=-10,WX0=-9.5,WX1=9.5,CH=9.9,DROP=9.0;
+  put(box(19,CH,0.5),wallM,0,CH/2,16.75,{cast:false});
+  put(box(0.5,CH,27.5),wallM,WX0-0.25,CH/2,3.2,{cast:false});put(box(0.5,CH,27.5),wallM,WX1+0.25,CH/2,3.2,{cast:false});
+  put(box(19,0.3,27.5),ceilM,0,CH+0.15,3.2,{cast:false});
+  // dropped ceiling with a lit cove round three sides
+  put(box(16.4,0.3,25.6),ceilM,0,DROP+0.15,3.7,{cast:false});
+  const coveM=glow(1.7,1.18,0.68);
+  put(box(1.3,0.02,27.5),coveM,WX0+0.65,CH-0.012,3.2,{cast:false,recv:false});put(box(1.3,0.02,27.5),coveM,WX1-0.65,CH-0.012,3.2,{cast:false,recv:false});
+  put(box(19,0.02,0.9),coveM,0,CH-0.012,WZ+0.45,{cast:false,recv:false});
+  for(const z of [-2.2,0.8]){const d=new THREE.Mesh(new THREE.CircleGeometry(0.17,24).rotateX(Math.PI/2),glow(2.6,2.2,1.7));d.position.set(-1.6,DROP-0.005,z);home.add(d);}
+  // window wall: plain wall on the left, sheers glowing with the last of the daylight on the right
+  put(box(3.2,CH,0.5),wallM,WX0+1.6,CH/2,WZ);
+  const sheer=canvasTex(1024,512,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);
+    [[0,'#8f9fe0'],[.35,'#b9b6e4'],[.62,'#e9c4cf'],[.82,'#ffd0a4'],[1,'#f3b98a']].forEach(([t,c])=>gr.addColorStop(t,c));g.fillStyle=gr;g.fillRect(0,0,w,h);
+    for(const fx of [.02,.27,.52,.77,.985]){const x=fx*w,sg=g.createLinearGradient(x-14,0,x+14,0);sg.addColorStop(0,'rgba(30,24,40,0)');sg.addColorStop(.5,'rgba(30,24,40,.34)');sg.addColorStop(1,'rgba(30,24,40,0)');g.fillStyle=sg;g.fillRect(x-14,0,28,h);}
+    const rg=g.createLinearGradient(0,h*.86,0,h);rg.addColorStop(0,'rgba(40,28,30,0)');rg.addColorStop(.25,'rgba(40,28,30,.22)');rg.addColorStop(1,'rgba(40,28,30,.4)');g.fillStyle=rg;g.fillRect(0,h*.86,w,h*.14);
+    for(let x=0;x<w;x++){const f=.5+.5*Math.sin(x*.33+Math.sin(x*.05)*2.2);g.fillStyle=f>.5?`rgba(255,255,255,${(f-.5)*.22})`:`rgba(40,30,50,${(.5-f)*.2})`;g.fillRect(x,0,1,h);}});
+  const sg2=new THREE.PlaneGeometry(15.8,9.0,520,1);{const P=sg2.attributes.position;for(let i=0;i<P.count;i++){const x=P.getX(i);P.setZ(i,Math.sin(x*13.5+Math.sin(x*1.7)*1.5)*0.07+Math.sin(x*3.1)*0.04);}sg2.computeVertexNormals();}
+  const sheerM=new THREE.MeshStandardMaterial({color:0xa8a39c,roughness:1,emissive:0xffffff,emissiveMap:sheer,emissiveIntensity:0.26});
+  put(sg2,sheerM,1.6,4.5,WZ+0.25,{cast:false});
+  const cg=new THREE.PlaneGeometry(2.7,9.0,48,1);{const P=cg.attributes.position;for(let i=0;i<P.count;i++)P.setZ(i,Math.sin(P.getX(i)*12)*0.12+Math.sin(P.getX(i)*4.3)*0.05);cg.computeVertexNormals();}
+  const curM=std(0xd9cdb9,1,{side:THREE.DoubleSide,bumpMap:weave([10,30]),bumpScale:0.8});
+  put(cg,curM,WX1-1.35,4.5,WZ+0.7);put(cg,curM,-5.1,4.5,WZ+0.7);
+  // rug
+  put(box(15,0.03,15),std(0xcdc4b5,1,{map:speck,bumpMap:pile,bumpScale:2.2}),0.6,0.015,-1.6,{cast:false});
+  // tv with a soft halo, over a long floating console
+  put(box(0.02,4.3,7.2),glow(1.5,1.02,0.56),WX0+0.02,5.1,-2.4,{cast:false,recv:false});
+  put(rbox(0.12,3.7,6.6,0.03),std(0x050506,0.1,{envMapIntensity:1.4}),WX0+0.1,5.1,-2.4);
+  put(rbox(1.5,0.09,17,0.02),std(0x6f4d36,0.42,{map:wood,bumpMap:wood,bumpScale:0.3}),WX0+0.75,1.62,-1.3);put(rbox(1.42,0.6,17,0.03),darkM,WX0+0.71,1.28,-1.3);
+  put(box(0.9,0.02,17),glow(1.5,1.02,0.56),WX0+0.5,0.96,-1.3,{cast:false,recv:false});
+  for(let i=0;i<3;i++)put(box(0.8,0.08,1.1),std([0xd9d2c4,0xb9ae9c,0xe8e3d8][i],0.8),WX0+0.8,1.7+i*0.085,-5.6,{ry:(i-1)*0.06});
+  put(lathe([[0,0],[0.2,0],[0.3,0.2],[0.24,0.42],[0.1,0.5],[0.12,0.58],[0,0.58]],28),std(0x3b332e,0.5),WX0+0.8,1.66,-7.4);
+  put(lathe([[0,0],[0.09,0],[0.1,0.7],[0,0.7]],16),std(0x24201d,0.5),WX0+0.55,1.66,-7.0);
+  // round vase with a bare branch
+  put(new THREE.SphereGeometry(0.72,40,28).scale(1,0.78,1),std(0xeee8de,0.55),-6.2,0.56,-8.2);
+  const brM=std(0x3a2a20,0.8);
+  const twig=(pts,r)=>put(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p=>new V3(...p))),24,r,6),brM,-6.2,0,-8.2);
+  twig([[0,0.9,0],[0.05,2.2,0.05],[-0.25,3.4,0.1],[-0.5,4.7,0]],0.03);twig([[-0.1,2.8,0.08],[0.5,3.2,0.2],[1.3,3.35,0.1]],0.018);
+  twig([[-0.3,3.7,0.08],[-0.9,4.0,-0.1],[-1.2,4.5,-0.1]],0.015);twig([[0.6,3.25,0.2],[0.9,3.0,0.35],[1.1,2.6,0.4]],0.012);
+  // low black cloud table
+  const tabM=std(0x121110,0.3);
+  for(const [x,z,r] of [[-3.4,-4.3,1.55],[-1.9,-3.7,1.35],[-2.5,-4.9,1.2]])
+    put(lathe([[0,0.74],[r-0.28,0.74],[r-0.1,0.77],[r-0.02,0.84],[r,0.93],[r-0.01,1.03],[r-0.05,1.085],[r-0.13,1.1],[0,1.1]],72),tabM,x,0,z);
+  put(lathe([[0,0],[1.36,0],[1.4,0.05],[1.3,0.4],[1.22,0.76],[0,0.76]],56),tabM,-2.7,0,-4.3);
+  put(rbox(1.15,0.07,0.8,0.02),std(0xd8d1c4,0.75),-3.55,1.135,-3.75,{ry:0.5});put(rbox(1.0,0.06,0.72,0.02),std(0x8a7f70,0.75),-3.5,1.2,-3.78,{ry:0.32});
+  put(lathe([[0,0],[0.1,0],[0.17,0.14],[0.13,0.3],[0.05,0.36],[0.06,0.42],[0,0.42]],24),std(0x2a1d17,0.35),-3.2,1.1,-4.4);
+  put(lathe([[0,0],[0.14,0],[0.42,0.16],[0.44,0.19],[0.13,0.05],[0,0.05]],32),std(0x7a4f37,0.45),-2.2,1.1,-4.0);
+  // low modular sofa along the right
+  for(const z of [-7.0,-3.6,-0.2]){
+    put(rbox(3.5,1.2,3.3,0.34),creamM,6.4,0.62,z);
+    put(rbox(1.15,1.5,2.7,0.42),creamM,7.75,1.9,z,{rz:-0.2});
+  }
+  const pilM=std(0xe2d9c9,1,{map:speck,bumpMap:weave([5,5]),bumpScale:1.2}),pilM2=std(0xb9ab97,1,{map:speck,bumpMap:weave([5,5]),bumpScale:1.2});
+  put(rbox(1.5,1.5,0.5,0.24),pilM,7.2,1.95,-5.2,{ry:1.2,rz:-0.3});put(rbox(1.35,1.35,0.46,0.22),pilM2,7.15,1.92,-1.6,{ry:1.75,rz:-0.34});
+  put(lathe([[0,0],[0.78,0],[0.9,0.12],[0.92,0.7],[0.84,1.12],[0.6,1.25],[0,1.25]],48),std(0xcfc3b0,1,{map:speck,bumpMap:pile,bumpScale:3}),3.3,0,-7.6);     // pouf
+  for(const z of [-2.2,0.8]){const t=new THREE.Mesh(new THREE.RingGeometry(0.17,0.26,32).rotateX(Math.PI/2),std(0x1a1a1a,0.5));t.position.set(-1.6,DROP-0.004,z);home.add(t);}
+}
+// light
+const hemi=new THREE.HemisphereLight(0xfff0dc,0x9a8a74,0.17);home.add(hemi);
+const winL=new THREE.RectAreaLight(0xc4ccff,0.8,15,8.5);winL.position.set(1.6,4.5,-9.5);winL.lookAt(1.6,3,6);home.add(winL);
+for(const [x,y,z,w,tx,tz] of [[-8.2,9.25,3.2,25,-9.6,3.2],[8.2,9.25,3.2,25,9.6,3.2],[0,9.25,-8.9,17,0,-10.2]]){
+  const c=new THREE.RectAreaLight(0xffc587,2.0,w,0.9);c.position.set(x,y,z);c.lookAt(tx,9.8,tz);home.add(c);}
+const duskL=new THREE.DirectionalLight(0xc3caff,0.42);duskL.position.set(3,7,-14);duskL.castShadow=true;duskL.shadow.mapSize.set(2048,2048);
+Object.assign(duskL.shadow.camera,{left:-12,right:12,top:12,bottom:-12,near:1,far:40});duskL.shadow.bias=-0.0006;duskL.shadow.normalBias=0.03;duskL.shadow.radius=6;home.add(duskL);
+const lampL=new THREE.PointLight(0xffd3a2,22,0,2);lampL.position.set(-1.2,8.6,0.6);lampL.castShadow=true;lampL.shadow.mapSize.set(1024,1024);lampL.shadow.bias=-0.004;lampL.shadow.radius=8;home.add(lampL);
+const keyL=new THREE.SpotLight(0xfff0de,230,0,0.24,1,2);   // the key: a tight warm pool that follows the rover, so it reads a step brighter than the roomkeyL.position.set(-5.5,7.5,7.5);keyL.target.position.set(0,1,0);home.add(keyL,keyL.target);
+const ledL=new THREE.PointLight(0x66ffee,0,9,2);home.add(ledL);
+const blob=new THREE.Mesh(new THREE.PlaneGeometry(4.6,4.6).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,color:0x000000,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,
+  alphaMap:canvasTex(128,128,(g,w,h)=>{g.fillStyle='#000';g.fillRect(0,0,w,h);const gr=g.createRadialGradient(64,64,2,64,64,64);gr.addColorStop(0,'#b0b0b0');gr.addColorStop(.4,'#4a4a4a');gr.addColorStop(.75,'#0e0e0e');gr.addColorStop(1,'#000');g.fillStyle=gr;g.fillRect(0,0,w,h);})}));
+blob.material.alphaMap.colorSpace=THREE.NoColorSpace;blob.position.y=0.02;home.add(blob);
+
+// the robot, gloss white, pixels under the surface
+const ledU={uT:{value:0},uRot:pixU.uRot,uH:{value:AXES},uS:{value:SENS},uHoleA:{value:PAD_ANG-0.004},uFace:{value:new V3(0,0,1)},uTxt:{value:null}};
+{ // the four hellos, drawn once to a strip of four tiles; each led reads the tile at its own centre, so the words come out in pixels
+  const c=document.createElement('canvas');c.width=512;c.height=768;const g=c.getContext('2d');
+  g.fillStyle='#000';g.fillRect(0,0,512,768);g.fillStyle='#fff';g.textAlign='center';g.textBaseline='middle';
+  ['Hello','こんにちは','Hola','مرحبا'].forEach((t,i)=>{const f=px=>`700 ${px}px -apple-system,"Helvetica Neue","Hiragino Sans","Noto Sans JP","Geeza Pro","Noto Sans Arabic",system-ui,sans-serif`;
+    g.font=f(150);const px=150*Math.min(1,470/g.measureText(t).width);g.font=f(px);g.fillText(t,256,i*192+100);});
+  const tx=new THREE.CanvasTexture(c);tx.generateMipmaps=false;tx.minFilter=tx.magFilter=THREE.LinearFilter;ledU.uTxt.value=tx;}
+function glossMat(holes){
+  const m=new THREE.MeshPhysicalMaterial({color:0xf2f3f5,roughness:0.16,clearcoat:1,clearcoatRoughness:0.03,envMapIntensity:1.3});
+  m.onBeforeCompile=sh=>{
+    Object.assign(sh.uniforms,ledU,{uHolesOn:{value:holes?1:0}});
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute vec3 aDir;varying vec3 vDir;').replace('#include <begin_vertex>','#include <begin_vertex>\nvDir=aDir;');
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>',`#include <common>
+      varying vec3 vDir;uniform float uT,uHolesOn,uHoleA;uniform mat3 uRot;uniform vec3 uH[14];uniform vec3 uS[12];uniform vec3 uFace;uniform sampler2D uTxt;`+LED_FN+LED_SHOW+``).replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+      {vec3 od=normalize(vDir);
+       if(uHolesOn>.5){float mh=10.;for(int i=0;i<14;i++)mh=min(mh,acos(clamp(dot(od,uH[i]),-1.,1.))-uHoleA);if(mh<0.)discard;
+}
+       const float ST=0.0698132;float row=clamp(floor(asin(clamp(od.y,-1.,1.))/ST+.5),-21.,21.);float rl=row*ST;
+       float n=max(6.,floor(84.*cos(rl)+.5));float off=mod(abs(row),2.)>.5?.5:0.;
+       float ci=floor(atan(od.z,od.x)/6.28318*n-off+.5);float lo=(ci+off)/n*6.28318;
+       vec3 pc=vec3(cos(rl)*cos(lo),sin(rl),cos(rl)*sin(lo));float dd=acos(clamp(dot(od,pc),-1.,1.));
+       // each led is a soft dot seen through the skin: no hard edge, a bright centre fading into a wide halo
+       float core=exp(-dd*dd/.00013);float halo=exp(-dd*dd/.0007)*(1.-smoothstep(.014,.034,dd));   // gone before the next led's cell begins, so no cell edges show
+       vec3 wd=normalize(uRot*pc);vec3 lc=ledShow(wd,pc,uT);
+       totalEmissiveRadiance+=lc*(core*4.2+halo*.5);}`);
+  };
+  return m;
+}
+const realG=new THREE.Group();home.add(realG);
+const real=[];
+{
+  // the shell and the panels have real wall thickness here: a reveal around every opening and a square rim on every panel
+  const WALL=0.07,PADT=0.06,wa=PAD_ANG+0.001;
+  const wallM=new THREE.MeshPhysicalMaterial({color:0xe9eaed,roughness:0.3,clearcoat:.6,clearcoatRoughness:0.12,envMapIntensity:1.1,side:THREE.DoubleSide});
+  const revealGeo=lathe([[(R-WALL)*Math.sin(wa),(R-WALL)*Math.cos(wa)],[R*Math.sin(wa),R*Math.cos(wa)]],72);
+  const padGeoR=(()=>{const Ri=R-PADT,p=[],n=14;
+    for(let i=0;i<=n;i++){const a=PAD_ANG*i/n;p.push([Ri*Math.sin(a),Ri*Math.cos(a)]);}
+    for(let i=n;i>=0;i--){const a=PAD_ANG*i/n;p.push([R*Math.sin(a),R*Math.cos(a)]);}
+    p[0][0]=0;p[p.length-1][0]=0;
+    // split into faces so the rim is a crisp band with its own material; the two curved faces keep smooth radial normals
+    const g0=lathe(p,72).toNonIndexed(),P=g0.attributes.position,nT=P.count/3,cr=Math.cos(PAD_ANG)+1e-4,v=new V3();
+    const face=[],rim=[];
+    for(let t=0;t<nT;t++){let r=true;for(let k=0;k<3;k++){v.fromBufferAttribute(P,t*3+k);if(v.y/v.length()>cr)r=false;}(r?rim:face).push(t);}
+    const pos=new Float32Array(P.count*3),nor=new Float32Array(P.count*3);let o=0;
+    const a=new V3(),b=new V3(),c=new V3(),fn=new V3();
+    for(const [list,isRim] of [[face,false],[rim,true]])for(const t of list){
+      a.fromBufferAttribute(P,t*3);b.fromBufferAttribute(P,t*3+1);c.fromBufferAttribute(P,t*3+2);
+      fn.set(a.x+b.x+c.x,0,a.z+b.z+c.z).normalize().multiplyScalar(Math.cos(PAD_ANG)).setY(-Math.sin(PAD_ANG));   // rim faces outward, square to the skin
+      for(const q of [a,b,c]){pos.set([q.x,q.y,q.z],o);
+        if(isRim)nor.set([fn.x,fn.y,fn.z],o);
+        else{const l=q.length(),sgn=l>R-PADT/2?1:-1;nor.set([sgn*q.x/l,sgn*q.y/l,sgn*q.z/l],o);}
+        o+=3;}}
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('normal',new THREE.BufferAttribute(nor,3));
+    g.addGroup(0,face.length*3,0);g.addGroup(face.length*3,rim.length*3,1);return g;})();
+  const sg=new THREE.SphereGeometry(1,128,96);sg.setAttribute('aDir',sg.attributes.position.clone());
+  const shellR=new THREE.Mesh(sg,glossMat(true));shellR.castShadow=true;realG.add(shellR);
+  const liner=new THREE.Mesh(new THREE.SphereGeometry(R-WALL,64,48),std(0xe4e5e7,0.55));liner.receiveShadow=true;realG.add(liner);
+  const collarGeo=lathe([[0.058,0.925],[0.085,0.925],[0.085,0.94],[0.072,0.95],[0.058,0.95]],28),collarM=std(0xcfd1d5,0.4);
+  const padM=glossMat(false),metal=std(0xb4b8bf,0.32,{metalness:1}),houseM=std(0x34373d,0.42,{metalness:.75});
+  const stemMat=()=>{const m=std(0xc2c6cc,0.3,{metalness:1});m.userData.uExt={value:0};
+    m.onBeforeCompile=sh=>{sh.uniforms.uExt=m.userData.uExt;
+      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nuniform float uExt;varying float vCY;').replace('#include <begin_vertex>','#include <begin_vertex>\nvCY=position.y+uExt;');
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vCY;').replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(vCY<'+HEAD_Y.toFixed(3)+')discard;');};
+    return m;};
+  acts.forEach(a=>{
+    const g=new THREE.Group();g.quaternion.copy(a.g.quaternion);realG.add(g);
+    const pg=padGeoR.clone(),P=pg.attributes.position,D=new Float32Array(P.count*3),v=new V3();
+    for(let i=0;i<P.count;i++){v.fromBufferAttribute(P,i);
+      v.applyQuaternion(g.quaternion).normalize();D[i*3]=v.x;D[i*3+1]=v.y;D[i*3+2]=v.z;}
+    pg.setAttribute('aDir',new THREE.BufferAttribute(D,3));
+    const slide=new THREE.Group();g.add(slide);
+    const sm=stemMat(),pad=new THREE.Mesh(pg,[padM,wallM]),stem=new THREE.Mesh(colGeo,sm),fl=new THREE.Mesh(flangeGeo,metal);
+    pad.castShadow=stem.castShadow=fl.castShadow=true;pad.receiveShadow=true;slide.add(pad,stem,fl);slide.userData.uExt=sm.userData.uExt;real.push(slide);
+    g.add(new THREE.Mesh(collarGeo,collarM));
+    const rv=new THREE.Mesh(revealGeo,wallM);rv.receiveShadow=true;g.add(rv);
+  });
+}
+// reflections: capture the room once, from where the robot stands
+{
+  realG.visible=false;blob.visible=false;
+  const pm0=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});pm0.color.setScalar(3.2);
+  const panel=new THREE.Mesh(new THREE.PlaneGeometry(5.5,3.2),pm0);panel.position.set(-5,7.5,6.5);panel.lookAt(0,1,0);home.add(panel);
+  const panel2=new THREE.Mesh(new THREE.PlaneGeometry(2.2,6),pm0.clone());panel2.material.color.setScalar(1.2);panel2.position.set(8,4.5,5);panel2.lookAt(0,1,0);home.add(panel2);
+  const crt=new THREE.WebGLCubeRenderTarget(256,{type:THREE.HalfFloatType}),cc=new THREE.CubeCamera(0.2,400,crt);cc.position.set(0,1.25,0);cc.update(renderer,home);
+  const pm=new THREE.PMREMGenerator(renderer);home.environment=pm.fromCubemap(crt.texture).texture;pm.dispose();
+  home.remove(panel,panel2);realG.visible=true;blob.visible=true;renderer.setRenderTarget(null);
+}
+// post: bloom in linear HDR, then tone-map and lay over the drawing
+const composer=new EffectComposer(renderer,new THREE.WebGLRenderTarget(4,4,{type:THREE.HalfFloatType}));   // no multisampling: every pass paid for a 4x resolve, the dearest thing in the frame; the room is drawn above screen resolution and scaled instead
+composer.renderToScreen=false;composer.addPass(new RenderPass(home,pcam));
+const FULL=Math.min(innerWidth,innerHeight)>=600;
+const gtao=new GTAOPass(home,pcam,4,4,undefined,{radius:1.5,distanceExponent:1.4,thickness:1.6,scale:1.15,samples:8,screenSpaceRadius:false});gtao.blendIntensity=0.95;
+const bokeh=new BokehPass(home,pcam,{focus:12,aperture:0.0011,maxblur:0.0085});
+// the rover and the floor it stands on stay fully sharp (a band 1.5 ft either side of it); the blur grows only beyond that
+{const m=bokeh.materialBokeh,a='float factor = ( focus + viewZ );';if(!m.fragmentShader.includes(a))console.warn('bokeh: focus band not applied');
+  m.fragmentShader=m.fragmentShader.replace(a,'float factor = ( focus + viewZ ); factor = sign( factor ) * max( abs( factor ) - 1.5, 0.0 );');m.needsUpdate=true;}
+if(FULL){composer.addPass(gtao);composer.addPass(bokeh);}
+const bloom=new UnrealBloomPass(new THREE.Vector2(4,4),0.38,0.6,1.15);composer.addPass(bloom);
+const fsCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1),fsScene=new THREE.Scene();
+const fsMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,uniforms:{tex:{value:null},uA:{value:1},uExp:{value:0.72},uPx:{value:new THREE.Vector2(1/1024,1/1024)}},
+  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,
+  fragmentShader:`uniform sampler2D tex;uniform float uA,uExp;uniform vec2 uPx;varying vec2 vUv;
+    vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
+    float vg;vec3 tm(vec2 u){return aces(texture2D(tex,u).rgb*uExp*vg);}
+    // edge smoothing on the tone-mapped image (stands in for multisampling, at a fraction of the cost)
+    vec3 smoothEdges(){const vec3 L=vec3(.299,.587,.114);
+      vec3 m=tm(vUv);float lM=dot(m,L),lNW=dot(tm(vUv+vec2(-1.,-1.)*uPx),L),lNE=dot(tm(vUv+vec2(1.,-1.)*uPx),L),lSW=dot(tm(vUv+vec2(-1.,1.)*uPx),L),lSE=dot(tm(vUv+vec2(1.,1.)*uPx),L);
+      float lo=min(lM,min(min(lNW,lNE),min(lSW,lSE))),hi=max(lM,max(max(lNW,lNE),max(lSW,lSE)));
+      if(hi-lo<max(.03,hi*.1))return m;
+      vec2 d=vec2(-((lNW+lNE)-(lSW+lSE)),(lNW+lSW)-(lNE+lSE));
+      float r=1./(min(abs(d.x),abs(d.y))+max((lNW+lNE+lSW+lSE)*.03125,.0078));
+      d=clamp(d*r,-8.,8.)*uPx;
+      vec3 A=.5*(tm(vUv-d/6.)+tm(vUv+d/6.));vec3 B=A*.5+.25*(tm(vUv-d*.5)+tm(vUv+d*.5));
+      float lB=dot(B,L);return(lB<lo||lB>hi)?A:B;}
+    void main(){vec2 q=vUv-.5;vg=1.-dot(q,q)*.7;vec3 c=pow(smoothEdges(),vec3(1./2.2));
+      c=mix(c,c*c*(3.-2.*c),.22);c+=(fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453)-.5)*2.2/255.;gl_FragColor=vec4(c,uA);}`});
+fsScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),fsMat));
+let rr=1;
+
+/* ───────────────── state ───────────────── */
+const robot={pos:new V3(0,R,0),quat:new THREE.Quaternion(),vel:new V3(),vy:0,lift:0,stance:1,heading:new V3(1,0,0),speed:0,grounded:true};
+robot.quat.setFromEuler(new THREE.Euler(0.42,0.3,0.18));
+let mode='view',xray=false,e=0,xr=0,G=0,time=0;
+const HOME_AZ=0.16,HOME_EL=0.1,HOME_Y=1.45,TAN15=Math.tan(15*DEG);
+const cam={az:HOME_AZ,el:HOME_EL,gAz:HOME_AZ,gEl:HOME_EL,size:5,target:new V3(0,HOME_Y,0),zoom:1,zs:1,init:false,close:0,look:new V3(),
+  lim:{az0:-1e9,az1:1e9,el0:0.06,el1:1.4,z0:0.45,z1:1.8}};
+const _look=new V3();
+const wantRender=()=>mode==='view'&&!xray;
+const target=new V3(0,0,0);let manual=false,lastManual=-1e9,lastInteract=-1e9,wp=0;
+const WAY=[[3,0],[12,0],[12.2,6.5],[12.2,9.3],[5,9.3],[2,7.8],[2,4.6],[0.4,7.6],[0.4,10.2],[-3.2,11.4],[-7.5,10.4],[-7.5,4.2],[-4,3],[-1,1.5],[-6,-2],[-2,-2.9],[5.5,-4.2],[5,-1.5],[0,0]];
+const keys={};
+const roomO=new V3(),loco={push:-1,pushT:0,cool:0,acc:12,hold:false,pause:1.2,wi:0,stuck:0,best:1e9,soft:false,ax:-1};
+const ROOM_WAY=[[-0.55,-0.5],[0.35,-0.15],[-0.15,0.3]];   // short hops round the middle of the rug
+const ROOM_BASE=[{name:'table',x0:-4.95,x1:-0.55,z0:-6.1,z1:-2.35,h:1.1},{name:'sofa',x0:4.65,x1:8.4,z0:-8.65,z1:1.45,h:2.6},
+  {name:'console',x0:-9.5,x1:-8.0,z0:-9.8,z1:7.2,h:1.66},{name:'curtain',x0:-9.5,x1:9.5,z0:-10.3,z1:-9.4,h:9}];
+const roomBoxes=ROOM_BASE.map(b=>({...b,g:1}));
+function placeRoom(){roomO.set(robot.pos.x,0,robot.pos.z);roomBoxes.forEach((b,i)=>{const s=ROOM_BASE[i];b.x0=s.x0+roomO.x;b.x1=s.x1+roomO.x;b.z0=s.z0+roomO.z;b.z1=s.z1+roomO.z;});
+  loco.wi=0;loco.ax=-1;loco.hold=false;loco.pause=1.2;cam.target.set(roomO.x,HOME_Y,roomO.z);}
+const E=new V3(1,0,0);
+
+const CAPTION={
+  view:['a sphere that walks.','two feet tall, gloss white, rgb pixels under the skin. pinch or double-tap to come in close. press <kbd>x</kbd> to see inside.'],
+  xray:['look through the skin.','fourteen panels, each on its own zipper-chain actuator. drag to turn it. press <kbd>x</kbd> to go back to the room.'],
+  explode:['nine parts, three layers.','core and actuators, then the frame, then the skin. drag to turn the drawing.'],
+  drive:['click. it goes.','click anywhere on the floor and orbi rolls there and stops, or use <kbd>w</kbd><kbd>a</kbd><kbd>s</kbd><kbd>d</kbd>. drag to orbit. try the stairs.']
+};
+function setMode(m){
+  if(m==='view'&&mode!=='view')placeRoom();
+  mode=m;
+  document.querySelectorAll('#modes .seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===m));
+  refresh();
+  canvas.style.touchAction=m==='drive'?'none':'pan-y';
+  if(m==='drive'){manual=false;trailCount=0;wp=0;target.set(robot.pos.x,0,robot.pos.z);
+    let best=1e9;WAY.forEach((w,i)=>{const d=Math.hypot(w[0]-robot.pos.x,w[1]-robot.pos.z);if(d<best&&d>1.5){best=d;wp=i;}});
+    if(Math.hypot(robot.pos.x,robot.pos.z)<1)wp=0;}
+  lastInteract=-1e9;
+}
+function refresh(){
+  const m=mode,night=wantRender(),cap=CAPTION[m==='view'&&xray?'xray':m];
+  stage.className=m+(night?' night':'');
+  document.querySelector('#caption h2').textContent=cap[0];
+  document.querySelector('#caption p').innerHTML=cap[1];
+  const pre={view:night?[HOME_AZ,HOME_EL]:[0.6,0.34],explode:[0.42,0.24],drive:[0.78,0.62]}[m];
+  if(night){const k=Math.PI*2*Math.round(cam.az/(Math.PI*2));cam.az-=k;cam.gAz=pre[0];}
+  else cam.gAz=pre[0]+Math.PI*2*Math.round((cam.az-pre[0])/(Math.PI*2));
+  cam.gEl=pre[1];cam.zoom=1;
+}
+function setXray(v){xray=v;document.getElementById('xray').setAttribute('aria-pressed',v);if(mode==='view')refresh();}
+document.querySelectorAll('#modes .seg button').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+document.getElementById('xray').addEventListener('click',()=>setXray(!xray));
+addEventListener('keydown',ev=>{
+  if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
+  const k=ev.key.toLowerCase();keys[k]=true;
+  if(k==='1')setMode('view');else if(k==='2')setMode('explode');else if(k==='3')setMode('drive');else if(k==='x')setXray(!xray);
+  if(mode==='drive'&&['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)&&stage.getBoundingClientRect().bottom>200)ev.preventDefault();
+});
+addEventListener('keyup',ev=>{keys[ev.key.toLowerCase()]=false;});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
+
+/* pointer */
+const ptr={down:false,drag:false,x:0,y:0},pts=new Map();let pinch=0,lastTap=-1e9,tapX=0,tapY=0;
+const pinchDist=()=>{const [a,b]=[...pts.values()];return Math.hypot(a.x-b.x,a.y-b.y)||1;};
+const zoomBy=f=>{cam.zoom=clamp(cam.zoom*f,cam.lim.z0,cam.lim.z1);lastInteract=time;};
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2(),groundPlane=new THREE.Plane(Y,0),hit=new V3();
+function steerTo(ev){
+  const r=canvas.getBoundingClientRect();
+  ndc.set((ev.clientX-r.left)/r.width*2-1,-((ev.clientY-r.top)/r.height*2-1));
+  ray.setFromCamera(ndc,camera);
+  const hits=ray.intersectObjects(rayTargets.filter(o=>o.parent.visible),false);
+  if(hits.length)target.copy(hits[0].point);
+  else if(ray.ray.intersectPlane(groundPlane,hit))target.copy(hit);else return;
+  target.y=0;manual=true;lastManual=time;
+}
+canvas.addEventListener('pointerdown',ev=>{ptr.down=true;ptr.drag=false;ptr.x=ev.clientX;ptr.y=ev.clientY;lastInteract=time;
+  pts.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+  if(pts.size===2){pinch=pinchDist();ptr.drag=true;}          // second finger: pinch to zoom, and this is no longer a tap
+  try{canvas.setPointerCapture(ev.pointerId);}catch(_){}
+});
+canvas.addEventListener('pointermove',ev=>{
+  const p=pts.get(ev.pointerId);if(p){p.x=ev.clientX;p.y=ev.clientY;}
+  if(pinch&&pts.size>=2){const d=pinchDist();zoomBy(pinch/d);pinch=d;return;}
+  if(ptr.down){
+    const dx=ev.clientX-ptr.x,dy=ev.clientY-ptr.y;
+    if(!ptr.drag&&Math.hypot(dx,dy)>4){ptr.drag=true;if(mode!=='view')canvas.classList.add('dragging');}
+    if(ptr.drag&&mode!=='view'){                                  // the room has one fixed camera angle: no orbiting there
+      const L=cam.lim,k=wantRender()?0.6+0.4*cam.zoom:1.45;      // the room turns more slowly than the drawing, slower still up close
+      cam.gAz=clamp(cam.gAz-dx*0.0045*k,L.az0,L.az1);cam.gEl=clamp(cam.gEl+dy*0.0035*k,L.el0,L.el1);ptr.x=ev.clientX;ptr.y=ev.clientY;lastInteract=time;
+    }
+  }
+});
+const up=ev=>{
+  if(ev)pts.delete(ev.pointerId);else pts.clear();
+  if(pts.size<2)pinch=0;
+  if(pts.size){const p=[...pts.values()][0];ptr.x=p.x;ptr.y=p.y;return;}
+  ptr.down=false;ptr.drag=false;canvas.classList.remove('dragging');};
+canvas.addEventListener('pointerup',ev=>{
+  if(ptr.down&&!ptr.drag&&pts.size<2){
+    if(mode==='drive')steerTo(ev);
+    else{                                                        // double-tap / double-click: in close, and back
+      const now=performance.now();
+      if(now-lastTap<340&&Math.hypot(ev.clientX-tapX,ev.clientY-tapY)<28){cam.zoom=cam.zoom<0.8?1:(wantRender()?0.44:0.6);lastTap=-1e9;}
+      else{lastTap=now;tapX=ev.clientX;tapY=ev.clientY;}
+      lastInteract=time;
+    }
+  }
+  up(ev);});
+canvas.addEventListener('pointercancel',up);addEventListener('blur',()=>up());
+// zoom: pinch on a phone or a trackpad (a trackpad pinch arrives as ctrl+wheel), or ctrl/cmd+wheel. a plain wheel still scrolls the page.
+canvas.addEventListener('wheel',ev=>{if(!ev.ctrlKey&&!ev.metaKey)return;ev.preventDefault();zoomBy(Math.exp(clamp(ev.deltaY,-40,40)*0.01));},{passive:false});
+{let g0=1;                                                       // safari's trackpad pinch
+  canvas.addEventListener('gesturestart',ev=>{ev.preventDefault();g0=cam.zoom;});
+  canvas.addEventListener('gesturechange',ev=>{ev.preventDefault();zoomBy(g0/Math.max(ev.scale,0.01)/cam.zoom);});}
+
+/* ───────────────── labels ───────────────── */
+const tmpV=new V3();
+const actIdx=v=>{let b=0,bd=-2;AXES.forEach((a,i)=>{const d=a.dot(v);if(d>bd){bd=d;b=i;}});return b;};
+const A_TOP=actIdx(new V3(0,1,0)),A_CAS=actIdx(new V3(1,-1,1)),A_CHN=actIdx(new V3(-1,1,1));
+const local=(obj,x,y,z)=>()=>tmpV.set(x,y,z).applyMatrix4(obj.matrixWorld);
+const dirPt=(obj,x,y,z,r)=>{const v=new V3(x,y,z).normalize().multiplyScalar(r);return local(obj,v.x,v.y,v.z);};
+const LABELS=[
+  {n:'01',name:'core',desc:'battery · compute · imu',at:local(starG,-0.12,-0.17,0.24),dx:-64,dy:168},
+  {n:'02',name:'zip drive ×14',desc:'two chain magazines, a drive block, a gearmotor',at:local(acts[A_CAS].g,0.14,0.57,-0.026),dx:70,dy:130},
+  {n:'03',name:'zipper chain',desc:'two toothed strands lock into a rigid column',at:local(acts[A_CHN].g,0,0.95,0),dx:30,dy:-150},
+  {n:'04',name:'pad ×14',desc:'skin panel · force sensing · pixels',at:local(acts[A_TOP].pad,0.2,0.98,0.2),dx:90,dy:-56},
+  {n:'05',name:'frame',desc:'exoskeleton, 14 ports',at:dirPt(frameG,0.36,1,0.36,FR_O),dx:60,dy:-84},
+  {n:'06',name:'sensor pod ×12',desc:'range + sound, edge-mounted',at:dirPt(frameG,0,-1,1,0.96),dx:54,dy:108},
+  {n:'07',name:'skin',desc:'sealed elastomer shell',at:dirPt(skinG,-0.34,1,0.34,R),dx:64,dy:-70},
+  {n:'08',name:'pixel layer',desc:PIX_COUNT.toLocaleString()+' leds under the skin',at:dirPt(skinG,0.5,0.12,1,R),dx:76,dy:150},
+];
+const labelsEl=document.getElementById('labels'),leadersEl=document.getElementById('leaders');
+const NS='http://www.w3.org/2000/svg';
+for(const L of LABELS){
+  L.el=document.createElement('div');L.el.className='lbl';
+  L.el.innerHTML=`<div class="in"><b>${L.n}</b><div><span>${L.name}</span><i>${L.desc}</i></div></div>`;
+  labelsEl.appendChild(L.el);
+  L.pl=document.createElementNS(NS,'polyline');L.c=document.createElementNS(NS,'circle');L.c.setAttribute('r',2.5);
+  leadersEl.appendChild(L.pl);leadersEl.appendChild(L.c);
+}
+document.getElementById('n-px').firstChild.textContent=PIX_COUNT.toLocaleString();
+document.getElementById('s-px').textContent=PIX_COUNT.toLocaleString()+' pixels, full sphere';
+
+/* HUD */
+const barsEl=document.getElementById('bars'),ticksEl=document.querySelector('#hud .ticks');
+const bars=acts.map((_,i)=>{const d=document.createElement('div');barsEl.appendChild(d);const t=document.createElement('span');t.textContent=String(i+1).padStart(2,'0');ticksEl.appendChild(t);return d;});
+const hAct=document.getElementById('h-act'),hSpd=document.getElementById('h-spd'),hElv=document.getElementById('h-elv'),hCtl=document.getElementById('h-ctl');
+let hudT=0;
+
+/* ───────────────── simulation ───────────────── */
+const VMAX=3.1,_d=new V3(),_q=new THREE.Quaternion(),_ax=new V3(),_c=new V3(),QI=new THREE.Quaternion();
+// how far a panel can extend before the lowest point of its cap meets the ground
+function contactExt(a,c){
+  if(a.y>-0.2)return 9;
+  const ct=-a.y,th=Math.acos(clamp(ct,-1,1)),phi=Math.max(0,th-PAD_ANG),cphi=Math.cos(phi);
+  let lx=0,lz=0;if(phi>0){const k=Math.sin(phi)/Math.sin(th);lx=a.x*k;lz=a.z*k;}
+  let ex=0;
+  for(let k=0;k<3;k++){const h=Math.max(groundH(c.x+a.x*(R+ex),c.z+a.z*(R+ex)),groundH(c.x+a.x*ex+R*lx,c.z+a.z*ex+R*lz));ex=clamp((c.y-h-R*cphi-0.012)/ct,0,2);}
+  return ex;
+}
+let cesNow=null;
+/* drive mode runs on MuJoCo (orbi-physics.js: the wasm engine + the gait controller, all local files).
+   `phys` stays null if the engine or the model cannot load, and the scripted path below then drives as
+   before. view and explode are always scripted (the room's furniture is not in the physics model). */
+let phys=null,physOn=false;
+const physS={dp:new V3(),de:new Float64Array(14),t:9,out:0,from:null,tx:1e9,tz:1e9};
+/* the MuJoCo gait hops (a panel shoving a ball throws it), so the page drives on the smooth scripted roll;
+   add ?physics to the address to run the measured gait instead */
+if(new URLSearchParams(location.search).has('physics'))import('./orbi-physics.js').then(m=>m.loadOrbiPhysics()).then(p=>{phys=p;if(window.__orbi)window.__orbi.phys=p;console.info('orbi: drive mode on MuJoCo '+p.version+' (wasm), 1 ms steps');})
+  .catch(err=>console.warn('orbi: MuJoCo did not load; drive mode stays scripted.',err));
+// physics takes over from the drawn pose; whatever it had to correct (a pose inside an obstacle,
+// a panel through the floor) is eased out of the drawing instead of jumping
+function physEnter(){
+  const p=robot.pos,q=robot.quat,S=physS,ext=acts.map(a=>a.ext);
+  phys.reset({pos:[p.x,p.y,p.z],quat:[q.x,q.y,q.z,q.w],ext,vel:[robot.vel.x,robot.vy,robot.vel.z]});
+  const s=phys.state;
+  S.dp.set(p.x-s.pos[0],p.y-s.pos[1],p.z-s.pos[2]);for(let i=0;i<14;i++)S.de[i]=ext[i]-s.ext[i];
+  S.t=0;S.from=null;S.tx=S.tz=1e9;physOn=true;
+}
+function physLeave(){physOn=false;physS.out=0.5;loco.push=-1;loco.hold=false;}
+function physDrive(dt){
+  const S=physS,p=robot.pos;
+  // where to? the same three inputs as the scripted path: keys, a clicked point; with neither it stays where it is
+  const kx=(keys['d']||keys['arrowright']?1:0)-(keys['a']||keys['arrowleft']?1:0),kz=(keys['w']||keys['arrowup']?1:0)-(keys['s']||keys['arrowdown']?1:0);
+  if(kx||kz){const fx=-Math.sin(cam.az),fz=-Math.cos(cam.az),rx=Math.cos(cam.az),rz=-Math.sin(cam.az);
+    target.set(p.x+(fx*kz+rx*kx)*3,0,p.z+(fz*kz+rz*kx)*3);manual=true;lastManual=time;S.tx=target.x;S.tz=target.z;S.from=null;}
+  if(target.x!==S.tx||target.z!==S.tz){S.tx=target.x;S.tz=target.z;S.from=[p.x,p.z];}   // a new click: follow the line from here
+  phys.setTarget(target.x,target.z,true,S.from);
+  phys.step(dt);
+  const s=phys.state;S.t+=dt;const k=1-sstep(0,0.8,S.t);
+  p.set(s.pos[0]+S.dp.x*k,s.pos[1]+S.dp.y*k,s.pos[2]+S.dp.z*k);
+  robot.quat.set(s.quat[0],s.quat[1],s.quat[2],s.quat[3]);
+  robot.vel.set(s.vel[0],0,s.vel[2]);robot.vy=s.vel[1];robot.speed=s.speed/0.3048;robot.grounded=s.grounded;robot.lift=0;
+  acts.forEach((a,i)=>{a.target=s.cmd[i];a.ext=Math.max(0,s.ext[i]+S.de[i]*k);a.wAxis.copy(a.axis).applyQuaternion(robot.quat);});
+  cesNow=null;
+}
+function simulate(dt){
+  // terrain growth
+  G=damp(G,mode==='drive'?1:0,mode==='drive'?2.2:4,dt);
+  obstacles.forEach((o,i)=>{
+    const g=sstep(0,1,clamp((G*1.5-i/obstacles.length*0.5),0,1));o.g=g;
+    o.obj.visible=g>0.002;
+    if(o.c!==undefined){o.obj.scale.setScalar(Math.max(g,1e-4));o.obj.position.y=o.c*g;}else o.obj.scale.y=Math.max(g,1e-4);
+  });
+
+  if(mode==='drive'&&phys){
+    try{if(!physOn)physEnter();physDrive(dt);return;}
+    catch(err){console.warn('orbi: physics stopped; drive mode back on the scripted path.',err);phys=null;physOn=false;}
+  }else if(physOn)physLeave();
+  physS.out-=dt;
+
+  if(mode==='explode'){
+    robot.quat.slerp(QI,1-Math.exp(-3.5*dt));robot.vel.set(0,0,0);robot.speed=damp(robot.speed,0,6,dt);
+    robot.stance=damp(robot.stance,0,4,dt);robot.lift=damp(robot.lift,0,4,dt);
+    for(const a of acts)a.target=0.3;
+  }else{
+    // where to?
+    let stopAt=true;
+    if(mode==='drive'){
+      let kx=(keys['d']||keys['arrowright']?1:0)-(keys['a']||keys['arrowleft']?1:0),kz=(keys['w']||keys['arrowup']?1:0)-(keys['s']||keys['arrowdown']?1:0);
+      if(kx||kz){const fx=-Math.sin(cam.az),fz=-Math.cos(cam.az),rx=Math.cos(cam.az),rz=-Math.sin(cam.az);
+        target.set(robot.pos.x+(fx*kz+rx*kx)*3,0,robot.pos.z+(fz*kz+rz*kx)*3);manual=true;lastManual=time;}
+      // no route of its own: it waits where it is until a click or a key
+    }else{                                   // at home: wander the room, stop, look, move on
+      const w=ROOM_WAY[loco.wi],wx=roomO.x+w[0],wz=roomO.z+w[1],rp=robot.pos;
+      // it stops with one panel flat on the floor, so the ring of panels round it is an even set of feet.
+      // rolling toward where a panel points brings that panel down, so the stop is steered, never twisted:
+      // near the waypoint it picks the panel whose landing spot is closest and rolls until that panel is under it
+      const land=(a,o)=>{const q=a.wAxis.copy(a.axis).applyQuaternion(robot.quat),h=Math.hypot(q.x,q.z),g=Math.acos(clamp(-q.y,-1,1))*R;
+        return o.set(rp.x+(h>1e-4?q.x/h*g:0),0,rp.z+(h>1e-4?q.z/h*g:0));};
+      if(loco.ax<0){target.set(wx,0,wz);
+        if(Math.hypot(wx-rp.x,wz-rp.z)<0.9){let bd=1e9;acts.forEach((a,i)=>{land(a,_c);const d=Math.hypot(_c.x-wx,_c.z-wz);if(d<bd){bd=d;loco.ax=i;}});}}
+      if(loco.ax>=0)land(acts[loco.ax],target);
+      if(loco.hold){loco.pause-=dt;if(loco.pause<=0){loco.wi=(loco.wi+1)%ROOM_WAY.length;loco.ax=-1;loco.hold=false;}}
+    }
+    const p=robot.pos,v=robot.vel;
+    _d.set(target.x-p.x,0,target.z-p.z);const dist=_d.length();if(dist>1e-4)_d.divideScalar(dist);
+    let sp=Math.hypot(v.x,v.z);
+    // stopped, it stands up a little on its feet (and settles back onto the skin before it rolls again)
+    robot.lift=damp(robot.lift,loco.hold&&mode==='drive'?0.12:0,loco.hold?3:7,dt);   // in the room it rests on the panel under it
+    _c.copy(p);_c.y+=robot.lift;
+    const ces=acts.map(a=>contactExt(a.wAxis.copy(a.axis).applyQuaternion(robot.quat),_c));
+    for(const a of acts)a.target=0;cesNow=ces;
+    // brake when close enough to stop in time; otherwise push, then ride the momentum
+    const arriving=stopAt&&dist<(loco.hold?0.9:sp*sp/9+0.35);
+    if(robot.grounded){
+      const e2=0.05,gx=(centerH(p.x+e2,p.z)-centerH(p.x-e2,p.z))/(2*e2),gz=(centerH(p.x,p.z+e2)-centerH(p.x,p.z-e2))/(2*e2),gg=1+gx*gx+gz*gz;
+      const slope=gx*_d.x+gz*_d.z;
+      // on a rise or a drop the legs carry it: climbing, the panels behind stay planted and lever it up;
+      // going down, the panels ahead reach for the lower level and let it down
+      // (a drop is seen coming: the floor a body-length ahead is lower than the floor it is on)
+      const drop=p.y-R-Math.max(groundH(p.x+_d.x*0.8,p.z+_d.z*0.8),groundH(p.x+_d.x*1.15,p.z+_d.z*1.15));
+      const climb=!arriving&&slope>0.12,desc=!arriving&&!climb&&(slope<-0.12||(drop>0.12&&dist>0.9));
+      loco.soft=arriving||climb||desc;
+      if(!loco.soft){v.x-=13*gx/gg*dt;v.z-=13*gz/gg*dt;}                    // gravity along the surface, when nothing is holding it
+      if(arriving){
+        // every panel that can reach the ground comes down, so the feet stand all round the centre
+        // (the steep ones first, a compact stance; a splayed one joins only if fewer than three reach)
+        if(mode!=='drive'&&loco.ax>=0){
+          // the room stop: only the ring next to the panel it lands on (three or four, evenly spaced), and only
+          // on the last stretch, each reaching just far enough to touch
+          const b=acts[loco.ax].axis;
+          if(dist<0.45)acts.forEach((a,i)=>{const c=a.axis.dot(b);if(c>0.5&&c<0.65&&ces[i]<=0.85)a.target=ces[i];});
+        }else{
+        const feet=acts.map((a,i)=>i).filter(i=>acts[i].wAxis.y<-0.3&&ces[i]<=0.85).sort((i,j)=>acts[i].wAxis.y-acts[j].wAxis.y);
+        feet.forEach((i,k)=>{if(k<3||acts[i].wAxis.y<-0.45)acts[i].target=ces[i];});}
+        loco.push=-1;
+        // ease onto the point itself: speed falls off with the distance left, so it lands there instead of short
+        sp=Math.hypot(v.x,v.z);
+        const room=mode!=='drive',vt=Math.min(Math.max(sp,0.7),room?2.2*dist+0.03:Math.sqrt(9*dist)),ka=1-Math.exp(-7*dt);
+        v.x+=(_d.x*vt-v.x)*ka;v.z+=(_d.z*vt-v.z)*ka;
+        loco.stuck=robot.speed<(room?0.02:0.12)?loco.stuck+dt:0;
+        if(dist<(room?0.008:0.04)||loco.stuck>1){v.x=v.z=0;loco.stuck=0;
+          if(dist>=0.04)target.set(p.x,0,p.z);                              // something is in the way: this is as close as it gets
+          if(!loco.hold){loco.hold=true;loco.pause=mode==='drive'?3.2:7+((loco.wi*37)%5)*0.8;}}
+      }else if(climb||desc){
+        loco.hold=false;loco.push=-1;loco.cool=0.15;
+        if(!(dist>loco.best-0.15)||dist>loco.best+0.5){loco.best=dist;loco.stuck=0;}else loco.stuck+=dt;
+        if(mode==='drive'&&loco.stuck>5){loco.stuck=0;loco.best=1e9;target.set(p.x,0,p.z);}
+        let n=0,lead=0,planted=0;
+        acts.forEach((a,i)=>{const w=a.wAxis,f=w.x*_d.x+w.z*_d.z;if(w.y>-0.25||ces[i]>EXT_MAX)return;
+          if(climb){if(f<0.2){a.target=ces[i];n++;}return;}
+          if(f>-0.2){a.target=ces[i];n++;}
+          if(f>0.15&&ces[i]>0.05){lead++;if(a.ext>ces[i]-0.04)planted++;}});
+        // climbing: a steady walking pace along the surface (slower when no panel has a foothold yet).
+        // going down: it waits at the edge until a leg ahead is planted on the lower level, then lets
+        // itself down slowly on it; the leg shortens as the body comes down
+        const pace=climb?(n?1.25:0.6):(planted?0.7:lead?0.1:0.45);
+        const vt=pace/Math.sqrt(1+slope*slope),ka=1-Math.exp(-5*dt);
+        v.x+=(_d.x*vt-v.x)*ka;v.z+=(_d.z*vt-v.z)*ka;
+      }else{
+        loco.hold=false;loco.cool-=dt;
+        // pushing against something it cannot pass: give up and stand where it is
+        // (no closer to the point for 2 s = blocked; a new, farther click starts the count again)
+        if(!(dist>loco.best-0.15)||dist>loco.best+0.5){loco.best=dist;loco.stuck=0;}else loco.stuck+=dt;
+        if(mode==='drive'&&loco.stuck>2){loco.stuck=0;loco.best=1e9;target.set(p.x,0,p.z);}
+        const along=v.x*_d.x+v.z*_d.z,hard=slope>0.3;
+        if(loco.push<0&&loco.cool<=0&&along<(hard?1.4:0.9)){
+          // pick the panel that points most nearly down-and-back
+          let best=-1,bs=0.55;const bl=Math.hypot(0.62,0.78);
+          acts.forEach((a,i)=>{if(ces[i]>0.9)return;const w=a.wAxis,sc=(-w.x*_d.x*0.62-w.y*0.78-w.z*_d.z*0.62)/bl;if(sc>bs){bs=sc;best=i;}});
+          if(best>=0){loco.push=best;loco.pushT=0.2*clamp(dist/2.6,0.35,1);loco.acc=hard?19:12.5;}
+        }
+        if(loco.push>=0){
+          const a=acts[loco.push],w=a.wAxis,wh=Math.hypot(w.x,w.z)||1;
+          let fx=-w.x/wh*0.55+_d.x*0.45,fz=-w.z/wh*0.55+_d.z*0.45;const fl=Math.hypot(fx,fz)||1;
+          v.x+=fx/fl*loco.acc*dt;v.z+=fz/fl*loco.acc*dt;
+          a.target=Math.min(ces[loco.push],EXT_MAX);
+          loco.pushT-=dt;if(loco.pushT<=0||ces[loco.push]>EXT_MAX){loco.push=-1;loco.cool=hard?0.1:0.3;}
+        }
+        // rolling resistance, and a little steer from the skin
+        sp=Math.hypot(v.x,v.z);
+        if(sp>1e-5){const k=Math.max(0,sp-(0.5+0.2*sp)*dt)/sp;v.x*=k;v.z*=k;sp*=k;
+          const st=1-Math.exp(-1.4*dt);v.x+=(_d.x*sp-v.x)*st;v.z+=(_d.z*sp-v.z)*st;}
+      }
+    }
+    const ox=p.x,oy=p.y,oz=p.z;
+    p.x+=v.x*dt;p.z+=v.z*dt;
+    {const bx=p.x,bz=p.z;resolveWalls(p,p.y,boxes);if(mode==='view')resolveWalls(p,p.y,roomBoxes);
+      if((bx!==p.x||bz!==p.z)&&dt>0){v.x=(p.x-ox)/dt;v.z=(p.z-oz)/dt;}}
+    const H=centerH(p.x,p.z);
+    if(p.y>H+(robot.grounded?0.09:1e-4)){robot.vy-=22*dt;p.y+=robot.vy*dt;robot.grounded=false;if(p.y<=H){p.y=H;robot.vy=0;robot.grounded=true;}}
+    else{p.y=H;robot.vy=0;robot.grounded=true;}
+    // roll without slipping
+    const dx=p.x-ox,dy=p.y-oy,dz=p.z-oz,dh=Math.hypot(dx,dz);
+    if(dh>1e-6){const ang=(robot.grounded?Math.hypot(dh,dy):dh)/R;_ax.set(dz,0,-dx).divideScalar(dh);
+      _q.setFromAxisAngle(_ax,ang);robot.quat.premultiply(_q).normalize();}
+    robot.speed=damp(robot.speed,dh/Math.max(dt,1e-4),10,dt);
+  }
+  acts.forEach((a,i)=>{a.ext=damp(a.ext,a.target,mode==='explode'?4:(a.target>a.ext?(loco.soft?10:24):9),dt);if(mode!=='explode'&&cesNow&&!(physS.out>0))a.ext=Math.min(a.ext,cesNow[i]);});
+}
+
+/* ───────────────── frame ───────────────── */
+const camDir=new V3(),proj=new V3();
+/* the room is the expensive picture (physical materials, shadows, occlusion, depth of field, bloom), and its cost
+   goes with the pixel count. It starts below retina resolution and then follows the frame time: slow frames
+   step the resolution down, a long run of fast ones steps it back up once. */
+let roomPR=Math.min(DPR,1.5);const roomQ={ms:16,slow:0,fast:0,raised:false,last:0,warm:0};
+function roomPace(now){
+  const d=now-roomQ.last;roomQ.last=now;if(!(d>0&&d<250)||roomQ.lock)return;
+  if((roomQ.warm+=d)<2500)return;   // shader compiles on the first frames are not the steady pace
+  roomQ.ms+=(d-roomQ.ms)*0.1;
+  roomQ.slow=roomQ.ms>30?roomQ.slow+d:0;roomQ.fast=roomQ.ms<12.5?roomQ.fast+d:0;
+  let pr=roomPR;
+  if(roomQ.slow>900&&roomPR>1)pr=roomPR-0.25;   // never below screen points: under that, edges go rough
+  else if(roomQ.fast>4000&&!roomQ.raised&&roomPR<Math.min(DPR,1.5)){pr=roomPR+0.25;roomQ.raised=true;}
+  if(pr!==roomPR){roomPR=pr;roomQ.slow=roomQ.fast=0;roomQ.ms=16;resize();}
+}
+let W=1,Hh=1,visible=true;
+function resize(){
+  W=stage.clientWidth;Hh=stage.clientHeight;renderer.setSize(W,Hh,false);composer.setPixelRatio(roomPR);composer.setSize(W,Hh);fsMat.uniforms.uPx.value.set(1/(W*roomPR),1/(Hh*roomPR));
+  gtao.setSize(W*roomPR*0.5,Hh*roomPR*0.5);   // occlusion is soft: half resolution costs a quarter and looks the same
+  uRes.value.set(W*DPR,Hh*DPR);leadersEl.setAttribute('viewBox',`0 0 ${W} ${Hh}`);
+}
+addEventListener('resize',resize);resize();
+new IntersectionObserver(en=>{visible=en[0].isIntersecting;}).observe(stage);
+
+let last=performance.now();
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt=clamp((now-last)/1000,0,0.05);last=now;
+  if(visible&&!window.__orbi.paused)tick(dt);
+}
+function tick(dt){
+  time+=dt;
+  const aspect=W/Hh,portrait=aspect<0.9;
+
+  simulate(dt);
+
+  e=damp(e,mode==='explode'?1:0,3.4,dt);
+  xr=damp(xr,xray?1:0,7,dt);
+  E.set(portrait?0:1,portrait?1:0,0);
+
+  // place the three layers
+  const base=_c.copy(robot.pos);base.y+=robot.lift;
+  starG.position.copy(base).addScaledVector(E,-3.1*e);
+  frameG.position.copy(base);
+  skinG.position.copy(base).addScaledVector(E,2.45*e);
+  starG.quaternion.copy(robot.quat);frameG.quaternion.copy(robot.quat);skinG.quaternion.copy(robot.quat);
+  for(const a of acts){
+    a.g.position.copy(a.axis).multiplyScalar(0.2*e);
+    a.pad.position.y=a.ext+0.3*e;
+    a.cf.uniforms.uExt.value=a.cl.uniforms.uExt.value=a.ext;
+    a.reelL.rotation.z=a.ext/0.04;a.reelR.rotation.z=-a.ext/0.04;a.gearL.rotation.z=-a.ext/0.042;a.gearR.rotation.z=a.ext/0.042+0.314;
+    a.padS.userData.fill.visible=a.padS.userData.hull.visible=a.fl.userData.fill.visible=xr<0.5;
+  }
+  skin.material.uniforms.uFill.value=1-xr;skin.material.depthWrite=xr<0.02;
+
+  // camera
+  const night=wantRender(),L=cam.lim;
+  let gSize,gT=tmpV;
+  if(mode==='explode'){gSize=portrait?Math.max(12.6,5.9/aspect):Math.max(5.4,10/aspect);gT.copy(robot.pos).addScaledVector(E,-0.7);}
+  else if(mode==='drive'){
+    // closer by default; closer still while it is up on something or coming to a stop. look a little way toward where it is heading, so the next obstacle stays in frame
+    // the camera follows a slow average of the rover's height: a stair is sustained and moves it, a hop is brief and does not
+    cam.gy=damp(cam.gy??robot.pos.y,robot.pos.y,1.2,dt);
+    const upK=sstep(0.12,0.5,cam.gy-R),slowK=1-sstep(0.1,0.7,robot.speed);
+    cam.close=damp(cam.close,Math.max(upK,slowK*0.8),1.1,dt);
+    gSize=(portrait?12.5:8.4)*(1-0.26*cam.close);
+    _look.set(target.x-robot.pos.x,0,target.z-robot.pos.z);const ld=_look.length();
+    if(ld>1e-3)_look.multiplyScalar(Math.min(ld,1.5)*(1-0.5*cam.close)/ld);
+    cam.look.x=damp(cam.look.x,_look.x,1.3,dt);cam.look.z=damp(cam.look.z,_look.z,1.3,dt);
+    gT.copy(robot.pos).add(cam.look);gT.y=cam.gy*0.6;}
+  else if(night){
+    // fitted to the rover at any aspect; zooming in closes on the rover itself
+    gSize=Math.max(5,3.7/aspect);
+    const zi=clamp((1-cam.zoom)/0.6,0,1),rx=robot.pos.x-roomO.x,rz=robot.pos.z-roomO.z;
+    gT.set(roomO.x+rx*(0.8+0.2*zi),HOME_Y+(robot.pos.y+0.03-HOME_Y)*zi,roomO.z+rz*(0.6+0.4*zi));}
+  else{gSize=Math.max(4.7,3.9/aspect);gT.copy(robot.pos);gT.y+=0.12;}
+  if(mode!=='drive'){cam.close=damp(cam.close,0,1.1,dt);cam.look.multiplyScalar(Math.exp(-1.3*dt));}
+  // how far the view may turn and zoom. in the room: stay in front of the rover, inside the walls, above the floor and below the ceiling
+  if(night){
+    const d0=gSize/(2*TAN15);L.z0=0.34;L.z1=clamp(14.6/d0,1,1.25);
+    const gd=d0*clamp(cam.zoom,L.z0,L.z1),azM=Math.min(0.85,Math.asin(Math.min(1,6.9/gd)));
+    L.az0=-azM;L.az1=azM;L.el0=0.035;L.el1=Math.min(0.62,Math.asin(Math.min(1,6.6/gd)));
+  }else{L.az0=-1e9;L.az1=1e9;L.el0=0.06;L.el1=1.4;L.z0=0.45;L.z1=1.8;}
+  // left alone for a few seconds it eases home (the room keeps a slow sway; the x-ray drawing turns)
+  const idleK=ptr.down?0:sstep(0,2,time-lastInteract-(night?4.5:2.5));
+  if(mode==='view'&&idleK>0){
+    if(night){cam.gAz=damp(cam.gAz,HOME_AZ+0.3*Math.sin(time*0.085),0.5*idleK,dt);cam.gEl=damp(cam.gEl,HOME_EL,0.6*idleK,dt);cam.zoom=damp(cam.zoom,1,0.7*idleK,dt);}
+    else cam.gAz+=dt*0.14*idleK;}
+  cam.zoom=clamp(cam.zoom,L.z0,L.z1);cam.gAz=clamp(cam.gAz,L.az0,L.az1);cam.gEl=clamp(cam.gEl,L.el0,L.el1);
+  if(!cam.init){cam.init=true;cam.size=gSize;cam.target.copy(gT);}
+  const ck=night?4.5:7;
+  cam.az=damp(cam.az,cam.gAz,ck,dt);cam.el=damp(cam.el,cam.gEl,ck,dt);
+  cam.zs=damp(cam.zs,cam.zoom,9,dt);                            // a second, quick stage so a zoom starts as softly as it lands
+  cam.size=damp(cam.size,gSize*cam.zs,3.2,dt);cam.target.x=damp(cam.target.x,gT.x,3.5,dt);cam.target.y=damp(cam.target.y,gT.y,3.5,dt);cam.target.z=damp(cam.target.z,gT.z,3.5,dt);
+  camDir.set(Math.cos(cam.el)*Math.sin(cam.az),Math.sin(cam.el),Math.cos(cam.el)*Math.cos(cam.az));
+  camera.position.copy(cam.target).addScaledVector(camDir,200);camera.lookAt(cam.target);
+  const hs=cam.size/2;camera.left=-hs*aspect;camera.right=hs*aspect;camera.top=hs;camera.bottom=-hs;camera.updateProjectionMatrix();camera.updateMatrixWorld();
+  uPPU.value=Hh*DPR/cam.size;
+
+  // uniforms
+  pixU.uRot.value.setFromMatrix4(_m4.makeRotationFromQuaternion(robot.quat));
+  pixU.uTime.value=time;
+  grid.material.uniforms.uCenter.value.copy(robot.pos);grid.material.uniforms.uAlpha.value=1-e;
+  grid.material.uniforms.uFade.value=14+12*G;
+
+  // drive overlays
+  const drv=mode==='drive';
+  reticle.visible=drv&&manual;
+  if(reticle.visible){reticle.position.set(target.x,groundH(target.x,target.z)+0.02,target.z);reticle.rotation.y=time*0.6;}
+  trail.visible=drv;
+  if(drv){
+    const gy=robot.pos.y-R+0.015,n=trailCount,lx=n?trailArr[(n-1)*3]:1e9,lz=n?trailArr[(n-1)*3+2]:1e9;
+    if(Math.hypot(robot.pos.x-lx,robot.pos.z-lz)>0.12){
+      if(n>=TRAIL_N){trailArr.copyWithin(0,3);trailCount=TRAIL_N-1;}
+      trailArr.set([robot.pos.x,gy,robot.pos.z],trailCount*3);trailCount++;
+      trailGeo.setDrawRange(0,trailCount);trailGeo.attributes.position.needsUpdate=true;
+    }
+    hudT-=dt;
+    // on MuJoCo: bar = measured panel extension, orange while that panel carries contact force (touch sensor > 1 N)
+    const ps=physOn&&phys?phys.state:null;
+    acts.forEach((a,i)=>{bars[i].style.height=(1+clamp(a.ext/EXT_MAX,0,1)*43)+'px';bars[i].style.background=ps&&ps.touch[i]>1?'var(--accent)':'';});
+    if(hudT<=0){hudT=0.1;
+      hAct.textContent=acts.filter(a=>a.ext>0.05).length+' / 14';
+      hSpd.textContent=(ps?ps.speed:robot.speed*0.305).toFixed(2)+' m/s';
+      const mm=Math.round((robot.pos.y-R)*(ps?304.8:305));hElv.textContent=(mm>=0?'+':'')+mm+' mm';
+      hCtl.textContent=(!manual?'waiting for a click':loco.hold&&!ps?'arrived':'rolling')+(ps?(ps.standing?' · standing':ps.climbing?' · climbing':''):'');}
+  }
+
+  // the room
+  rr=damp(rr,wantRender()?1:0,2.4,dt);if(rr>0.997&&wantRender())rr=1;if(rr<0.003&&!wantRender())rr=0;
+  if(rr<1)renderer.render(scene,camera);
+  if(rr>0){
+    ledU.uT.value=time;
+    const rx=robot.pos.x-roomO.x,rz=robot.pos.z-roomO.z;
+    {const G=LED_GW*3+LED_GJ,tc=time%(G+5*LED_SEG),gr=tc<G,s=gr?0:(tc-G)/LED_SEG,gs=[0,LED_GW,LED_GW+LED_GJ,2*LED_GW+LED_GJ,G],gi=gr?gs.findIndex(v=>v>tc)-1:0,L=gr?gs[gi+1]-gs[gi]:LED_SEG,e=gr?0.45:0.7,tl=gr?tc-gs[gi]:(s-Math.floor(s))*LED_SEG,c=gr?[.75,1,.95]:LED_COL[Math.floor(s)%5];     // the glow on the rug follows the pattern showing
+      ledL.color.setRGB(c[0],c[1],c[2]);ledL.intensity=1.7*sstep(0,e,tl)*(1-sstep(L-e,L,tl));
+      ledU.uFace.value.set(pcam.position.x-rx,0,pcam.position.z-rz).normalize();}
+    const ry=robot.pos.y+robot.lift+0.03;   // with the stand-up lift, or the feet would be drawn through the floor
+    realG.position.set(rx,ry,rz);realG.quaternion.copy(robot.quat);ledL.position.set(rx,ry,rz);blob.position.set(rx,0.045,rz);keyL.target.position.set(rx,1,rz);
+    acts.forEach((a,i)=>{real[i].position.y=a.ext;real[i].userData.uExt.value=a.ext;});
+    const dist=cam.size/(2*Math.tan(15*DEG));
+    proj.set(cam.target.x-roomO.x,cam.target.y,cam.target.z-roomO.z);
+    pcam.position.copy(proj).addScaledVector(camDir,dist);
+    pcam.position.set(clamp(pcam.position.x,-8.9,8.9),clamp(pcam.position.y,0.3,8.7),Math.min(pcam.position.z,16));
+    pcam.lookAt(proj);pcam.aspect=aspect;pcam.updateProjectionMatrix();
+    bokeh.uniforms.focus.value=pcam.position.distanceTo(realG.position);
+    composer.render(dt);if(rr===1)roomPace(performance.now());else{roomQ.last=0;roomQ.warm=0;}
+    fsMat.uniforms.tex.value=composer.readBuffer.texture;fsMat.uniforms.uA.value=rr*rr*(3-2*rr);
+    renderer.setRenderTarget(null);renderer.autoClear=false;renderer.render(fsScene,fsCam);renderer.autoClear=true;
+  }
+
+  // labels
+  const la=sstep(0.72,0.97,e);
+  labelsEl.style.opacity=leadersEl.style.opacity=la;
+  if(la>0.01){
+    const k=W<860?0.55:1;
+    for(const L of LABELS){
+      proj.copy(L.at()).project(camera);
+      const ax=(proj.x*0.5+0.5)*W,ay=(-proj.y*0.5+0.5)*Hh;
+      const dx=L.dx*k,dy=L.dy*k,sx=Math.sign(dx),ex=ax+sx*Math.min(Math.abs(dx),Math.abs(dy));
+      const lx=ax+dx,ly=ay+dy;
+      L.pl.setAttribute('points',`${ax.toFixed(1)},${ay.toFixed(1)} ${ex.toFixed(1)},${ly.toFixed(1)} ${lx.toFixed(1)},${ly.toFixed(1)}`);
+      L.c.setAttribute('cx',ax.toFixed(1));L.c.setAttribute('cy',ay.toFixed(1));
+      L.el.className='lbl '+(dx>0?'l':'r');
+      L.el.style.transform=`translate(${lx.toFixed(1)}px,${ly.toFixed(1)}px)`;
+    }
+  }
+}
+const _m4=new THREE.Matrix4();
+setMode('view');
+canvas.classList.add('on');
+requestAnimationFrame(frame);
+window.__orbi={robot,target,get roomPR(){return roomPR},set roomPR(v){roomPR=v;roomQ.lock=true;resize();},cam,acts,home,gtao,bokeh,keyL,hemi,winL,duskL,lampL,ledL,bloom,fsMat,ledU,pcam,get rr(){return rr},setMode,setXray,step:(n=60,dt=1/60)=>{for(let i=0;i<n;i++)tick(dt);},get mode(){return mode},get time(){return time}};
+</script>
+</body>
+</html>

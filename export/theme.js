@@ -6,7 +6,7 @@
   'use strict';
 
   // ---------- Card registry ----------
-  // Each card on the homepage has a sequential id (#1..#27) and a
+  // Each card on the homepage has a sequential id (#1..#28) and a
   // human-friendly name. Use these names when discussing the page.
   // Matching priority: framerName, then chip+body text.
   var CARDS = [
@@ -36,7 +36,8 @@
     { id: 24, name: 'Ref: Ted Goldstein', chip: 'Reference', body: 'Goldstien' },
     { id: 25, name: 'Anthem',             framerName: 'Anthem' },
     { id: 26, name: 'Wonder Workshop',    framerName: 'Wonder' },
-    { id: 27, name: 'Medicare',           framerName: 'Medicare' }
+    { id: 27, name: 'Medicare',           framerName: 'Medicare' },
+    { id: 28, name: 'Orbi',               framerName: 'Orbi' }
   ];
 
   // Cards that ship without a Text Chip — inject the site's standard chip.
@@ -162,7 +163,7 @@
   var FIVE_COL_MIN = 3200;
   var CARD_ORDER = [
     1, 3, 27, 18, 20, 2, 19,
-    9, 14, 25, 4, 5, 7, 12, 15, 6, 17, 13, 16, 26, 24, 21, 10, 22,
+    9, 14, 25, 28, 4, 5, 7, 12, 15, 6, 17, 13, 16, 26, 24, 21, 10, 22,
     8, 11, 23
   ];
   var layoutCount = 0;
@@ -217,15 +218,16 @@
         if (index >= count) col.setAttribute('data-br-inactive-column', '');
         else col.removeAttribute('data-br-inactive-column');
       });
+      var target = 0;
       records.forEach(function (record, index) {
         var card = record.node;
         card.setAttribute('data-br-feed-order', String(index));
         if (count === 1) card.setAttribute('data-br-mobile-order', String(index));
         else card.removeAttribute('data-br-mobile-order');
-        // Reserve the upper-left pair. The rest start in Column 2 and wrap
-        // through every active column, preserving the remaining sequence.
-        var target = count === 1 || index < 2 ? 0 : (index - 1) % count;
         cols[target].appendChild(card);
+        // Hello/video and Orbi/Abdullah each share one round-robin slot.
+        var id = card.getAttribute('data-br-id');
+        if (id !== '1' && id !== '28') target = (target + 1) % count;
       });
       window.dispatchEvent(new CustomEvent('br:layout', { detail: { columns: count } }));
     };

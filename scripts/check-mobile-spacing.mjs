@@ -64,7 +64,7 @@ for (const [engine, browserType] of Object.entries({ chromium, webkit })) {
       });
       results.push({ engine, width, ...metrics });
       try {
-        assert.equal(metrics.cards.length, 27, "All 27 unique cards, including Medicare, must remain visible");
+        assert.equal(metrics.cards.length, 28, "All 28 unique cards, including Orbi, must remain visible");
         assert.deepEqual(metrics.cards.slice(0, 7).map((card) => card.name), openingOrder,
           "The opening seven cards must follow the fixed mobile sequence");
         assert.deepEqual(metrics.cards.slice(-3).map((card) => card.name), ['Stat: Ranked', 'Stat: $22.8m', 'Stat: 4.9★'], 'Stats remain last in the feed');
@@ -79,7 +79,7 @@ for (const [engine, browserType] of Object.entries({ chromium, webkit })) {
           if (card.media) assert.ok(Object.values(card.media).every((edge) => Math.abs(edge) < 1),
             `${card.name}: media does not fill its card: ${JSON.stringify(card.media)}`);
         }
-        console.log(`${engine} ${width}px: all 27 cards, fixed opening, late stats, 20px gaps, 10px corners, media fills cards`);
+        console.log(`${engine} ${width}px: all 28 cards, fixed opening, late stats, 20px gaps, 10px corners, media fills cards`);
       } catch (error) {
         failures.push(`${engine} ${width}px: ${error.message}`);
       }

@@ -1,6 +1,6 @@
 # Home-screen cards — cheat sheet
 
-The home page (`export/index.html`) has **27 unique visible cards**, including Medicare, across responsive 1–5-column layouts. The authored export also contains one hidden duplicate Levels card.
+The home page (`export/index.html`) has **28 unique visible cards**, including Orbi, across responsive 1–5-column layouts. The authored export also contains one hidden duplicate Levels card.
 Each card's **name** is its Framer layer name (`data-framer-name`). The small pill on each
 card is its **category chip** (Work / Stats / Reference …) — chips repeat, so the name is
 the real identifier.
@@ -12,10 +12,10 @@ the real identifier.
 
 - Hello and Brett's introductory video are always first and second in Column 1. On mobile they are the first two cards in the single feed.
 - Opening: **Hello → introductory video → Medicare → 1PRM → Cloud People → Anchor Maps → doc.ai**.
-- The remaining non-stat sequence is unchanged: Meta, Levels, Anthem, Abdullah, Arya, Navdy, Nir Eyal, Triton, Intel, patchworks, Scott Snibbe, Resident Designer, Wonder Workshop, Ted Goldstein, Education, Hack, TEDx.
+- The remaining non-stat sequence is unchanged: Meta, Levels, Anthem, Orbi, Abdullah, Arya, Navdy, Nir Eyal, Triton, Intel, patchworks, Scott Snibbe, Resident Designer, Wonder Workshop, Ted Goldstein, Education, Hack, TEDx.
 - The three stats follow that content, in ranking/capital/rating order. Their styling is not part of ordering changes.
 - Breakpoints (CSS viewport widths): **1** below 834; **2** from 834; **3** from 1024; **4** from 2560; **5** from 3200.
-- Wider placement reserves Column 1's first two slots for Hello/video, then distributes the rest round-robin starting in Column 2. No height measurements, shortest-column placement, loading-dependent reordering or card clones.
+- Wider placement reserves Column 1's first two slots for Hello/video, then distributes the rest round-robin starting in Column 2. Orbi and Abdullah share a slot so the project sits directly above the reference. No height measurements, shortest-column placement, loading-dependent reordering or card clones.
 - Every outer card wrapper has CSS `order:0` at every breakpoint. All columns share 20px gutters and gaps; Column 5 inherits the same fluid card styling. Thank You remains outside and below the complete feed.
 - Regression: `npm run test:responsive-layout` (both engines, boundary widths, forward/reverse resizing, delayed media/fonts, cold wide loads, node identity and editor coverage).
 

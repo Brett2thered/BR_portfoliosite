@@ -38,7 +38,7 @@ for (const [engine, type] of Object.entries({ chromium, webkit })) {
       assert.equal(await card.getAttribute('href'), 'anthem.html');
       assert.notEqual(await card.getAttribute('target'), '_blank');
       assert.equal(await card.evaluate((el) => getComputedStyle(el).textDecorationLine), 'none');
-      assert.equal(await page.locator('[data-br-id]').evaluateAll((cards) => cards.filter((el) => el.getBoundingClientRect().width && el.getBoundingClientRect().height).length), 27);
+      assert.equal(await page.locator('[data-br-id]').evaluateAll((cards) => cards.filter((el) => el.getBoundingClientRect().width && el.getBoundingClientRect().height).length), 28);
       assert.equal(await page.locator('a[data-framer-name="Navdy"]').getAttribute('href'), 'https://youtu.be/pKL4PJICS40?si=51z_0Nj5QPSR0pb-');
       assert.equal(await page.locator('a[href="https://www.linkedin.com/in/mrshakur/"]').count(), 1);
       await card.scrollIntoViewIfNeeded();

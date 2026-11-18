@@ -6,7 +6,7 @@ import { chromium, webkit } from 'playwright';
 const base = process.argv[2] || 'http://127.0.0.1:4173';
 const output = process.argv[3] || '/private/tmp/br-responsive-order';
 // Independent editorial fixture: do not derive this from runtime placement.
-const feed = [1, 3, 27, 18, 20, 2, 19, 9, 14, 25, 4, 5, 7, 12, 15, 6, 17, 13, 16, 26, 24, 21, 10, 22, 8, 11, 23];
+const feed = [1, 3, 27, 18, 20, 2, 19, 9, 14, 25, 28, 4, 5, 7, 12, 15, 6, 17, 13, 16, 26, 24, 21, 10, 22, 8, 11, 23];
 const stats = [8, 11, 23];
 const widths = [320, 420, 833, 834, 900, 1023, 1024, 1440, 2559, 2560, 2633, 3199, 3200, 3840];
 const countAt = (width) => width >= 3200 ? 5 : width >= 2560 ? 4 : width >= 1024 ? 3 : width >= 834 ? 2 : 1;
@@ -14,7 +14,11 @@ const expectedColumns = (count) => {
   if (count === 1) return [feed];
   const columns = Array.from({ length: count }, () => []);
   columns[0].push(1, 3);
-  feed.slice(2).forEach((id, index) => columns[(index + 1) % count].push(id));
+  feed.slice(2).filter((id) => id !== 28).forEach((id, index) => {
+    const column = columns[(index + 1) % count];
+    if (id === 4) column.push(28);
+    column.push(id);
+  });
   return columns;
 };
 const results = [];
@@ -49,8 +53,8 @@ async function measure(page) {
 function verify(layout, label) {
   const count = countAt(layout.width);
   assert.equal(layout.columns.length, count, `${label}: column count`);
-  assert.equal(layout.cards.length, 27, `${label}: all unique cards visible`);
-  assert.equal(new Set(layout.cards.map((card) => card.id)).size, 27);
+  assert.equal(layout.cards.length, 28, `${label}: all unique cards visible`);
+  assert.equal(new Set(layout.cards.map((card) => card.id)).size, 28);
   assert.deepEqual(layout.columns.map((column) => column.cards.map((card) => card.id)), expectedColumns(count), `${label}: deterministic editorial placement`);
   assert.deepEqual(layout.cards.slice().sort((a, b) => a.rank - b.rank).map((card) => card.id), feed, `${label}: global editorial sequence`);
   assert.deepEqual(layout.columns[0].cards.slice(0, 2).map((card) => card.id), [1, 3], `${label}: Hello and video pinned in upper-left`);
@@ -67,7 +71,7 @@ function verify(layout, label) {
   assert.ok(layout.overflow <= 1, `${label}: no horizontal overflow`);
   assert.equal(layout.levelsTotal, 2); assert.equal(layout.levelsVisible, 1);
   assert.ok(layout.originalNodesRetained && layout.originalMediaRetained, `${label}: preserve actual cards, links and media nodes`);
-  assert.equal(layout.originalCount, 28, `${label}: test captured every original wrapper, including the hidden duplicate`);
+  assert.equal(layout.originalCount, 29, `${label}: test captured every original wrapper, including the hidden duplicate`);
   assert.ok(layout.originalMediaCount > 0);
 }
 
@@ -142,12 +146,12 @@ for (const [engine, type] of Object.entries({ chromium, webkit })) {
     await page.waitForTimeout(100);
     await page.evaluate(() => window.__brEdit.enter());
     assert.equal(await page.evaluate(() => window.__brEdit.bp()), 'five');
-    assert.equal(await page.evaluate(() => window.__brEdit.state.cards.length), 27);
-    assert.equal(await page.evaluate(() => new Set(window.__brEdit.state.cards.map((card) => card.key)).size), 27);
+    assert.equal(await page.evaluate(() => window.__brEdit.state.cards.length), 28);
+    assert.equal(await page.evaluate(() => new Set(window.__brEdit.state.cards.map((card) => card.key)).size), 28);
     for (const [width, key] of [[420, 'one'], [900, 'two'], [1440, 'three'], [2560, 'four'], [3200, 'five']]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.waitForFunction((bp) => window.__brEdit.bp() === bp, key);
-      assert.equal(await page.evaluate(() => window.__brEdit.state.cards.length), 27);
+      assert.equal(await page.evaluate(() => window.__brEdit.state.cards.length), 28);
       verify(await measure(page), `${engine}/${width}/active-editor`);
     }
     await Promise.all([page.waitForEvent('domcontentloaded'), page.evaluate(() => window.__brEdit.exit())]);

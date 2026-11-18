@@ -28,7 +28,7 @@ for (const [engine, type] of Object.entries({chromium,webkit})) {
       await page.setViewportSize({width,height:1000});
       await page.mouse.move(0,0);
       await page.waitForTimeout(200);
-      assert.equal(await page.locator('[data-br-id]').evaluateAll((items) => items.filter((el) => el.offsetWidth && el.offsetHeight).length),27);
+      assert.equal(await page.locator('[data-br-id]').evaluateAll((items) => items.filter((el) => el.offsetWidth && el.offsetHeight).length),28);
       for (const spec of cards) {
         const card = page.locator(`[data-stat="${spec.key}"]`);
         assert.equal(await card.getAttribute('data-br-id'),spec.id);

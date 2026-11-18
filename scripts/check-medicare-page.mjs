@@ -26,7 +26,7 @@ for (const [engine, type] of Object.entries({ chromium, webkit })) {
       await card.scrollIntoViewIfNeeded();
       await card.locator('.br-medicare-preload').evaluate((img) => img.decode());
       assert.equal(await card.getAttribute('data-br-id'), '27');
-      assert.equal(await page.locator('[data-br-id]').evaluateAll((cards) => cards.filter((c) => c.offsetWidth && c.offsetHeight).length), 27);
+      assert.equal(await page.locator('[data-br-id]').evaluateAll((cards) => cards.filter((c) => c.offsetWidth && c.offsetHeight).length), 28);
       if (width < 834) assert.deepEqual(await page.locator('[data-br-mobile-order]').evaluateAll((cards) => cards.slice(0, 10).map((c) => c.dataset.brId)), ['1','3','27','18','20','2','19','9','14','25']);
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
       const art = card.locator('.br-medicare-collage');
@@ -90,7 +90,7 @@ for (const [engine, type] of Object.entries({ chromium, webkit })) {
       await demo.locator('.panel input').waitFor();
       assert.deepEqual(errors, []);
       assert.equal(context.pages().length, 1);
-      results.push(`${engine} ${width}px: 27 cards, animated hero, clean card, keyboard navigation, safe embed, full route, medication search, edit, alternate branch, reset and help passed`);
+      results.push(`${engine} ${width}px: 28 cards, animated hero, clean card, keyboard navigation, safe embed, full route, medication search, edit, alternate branch, reset and help passed`);
       console.log(results.at(-1));
       await context.close();
     }
