@@ -372,6 +372,30 @@
     setupVimeoPoster('Cloud People', 'assets/cloud-people.webp', { forceMuted: true });
   }
 
+  function setupCloudPeopleHover() {
+    var card = document.querySelector('[data-framer-name="Cloud People"]');
+    var video = card && card.querySelector('.cloud-people-hover');
+    if (!video) return;
+    var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    function stop() {
+      video.classList.remove('is-playing');
+      video.pause();
+      if (video.currentTime) video.currentTime = 0;
+    }
+    card.addEventListener('pointerenter', function (event) {
+      if (event.pointerType === 'touch' || reducedMotion.matches) return;
+      video.play().catch(function () { /* Keep the existing cover visible. */ });
+    });
+    video.addEventListener('playing', function () {
+      if (!video.paused) video.classList.add('is-playing');
+    });
+    video.addEventListener('error', stop);
+    card.addEventListener('pointerleave', stop);
+    card.addEventListener('pointercancel', stop);
+    reducedMotion.addEventListener('change', stop);
+  }
+
   // ---------- Public API ----------
   function listCards() {
     return CARDS.map(function (c) {
@@ -411,6 +435,7 @@
     setupResponsiveColumns();
     setupAnchorPoster();
     setupCloudPeoplePoster();
+    setupCloudPeopleHover();
     setupVimeoPoster('Brett Player', 'assets/brett-video-poster.jpg', { forceMuted: false });
     setupVimeoPoster('Triton Player', 'assets/triton-poster.jpg', { forceMuted: false });
     setupResumeDownload();

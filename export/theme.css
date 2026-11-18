@@ -73,6 +73,19 @@
   aspect-ratio: 1.00274 !important;
   height: auto !important;
 }
+.cloud-people-hover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+}
+.cloud-people-hover.is-playing {
+  opacity: 1;
+}
 [data-framer-name="Cloud People"] .framer-j71io8 {
   position: absolute !important;
   inset: 0 !important;
