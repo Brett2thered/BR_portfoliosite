@@ -35,7 +35,7 @@ Numbering is reading order: Column 1 top→bottom, then Column 2, then Column 3.
 
 - Ranking, capital, and rating retain runtime IDs **8, 11, 23**, appear after other portfolio content, and preserve their existing visual styling.
 - Source of truth: the three definitions in `scripts/build-stats-cards.mjs`. Run `npm run stats-cards` to rebuild their static HTML (also runs before publishing).
-- Styling: `export/stats-cards.css`, with the original heavy white system-display metrics and layered, translucent halo shadows; card-relative type, intrinsic height, consistent padding, and CSS-only rating stars. Metric presentation: `1%`, `22.8m`, `4.9`. No images, SVG, canvas, or runtime rendering.
+- Styling: `export/stats-cards.css`, with the original heavy white system-display metrics and layered, translucent halo shadows; card-relative type, intrinsic height, consistent padding, and CSS-only rating stars. Metric presentation: `1%`, `$127.7 m`, `4.9`. No images, SVG, canvas, or runtime rendering.
 - Direct preview anchors: `#stats-ranking`, `#stats-capital`, `#stats-rating`.
 - Responsive regression: `npm run test:stats`, including 200% text and no-script/no-image/no-font fallbacks.
 
@@ -61,7 +61,7 @@ Numbering is reading order: Column 1 top→bottom, then Column 2, then Column 3.
 | 9 | **New Project** | Hustle | 1prm.ai | `1PRM_cover_boomerang.mp4` | The "Hustle" card → 1PRM |
 | 10 | **Levels** | Wearable | levels.html | `img_13.png` | Levels |
 | 11 | **Triton Player** | Transport | tritonsubs.com (T3300-6) | (video) | Triton submarine |
-| 12 | **Stats Card** | Stats | — | — | Stat: "$22.8 million in capital raised" |
+| 12 | **Stats Card** | Stats | — | — | Stat: "$127.7 million collectively raised by teams I’ve helped found, build and grow with" |
 | 13 | **Meta** | Work | fb.html | `img_9.gif` | Meta / Facebook |
 | 14 | **Reference Card** | Reference | nirandfar.com | `img_12.png` | Testimonial — **Nir Eyal** |
 | 15 | **Reference Card** | Reference | — | — | Testimonial — **Scott Snibbe** |

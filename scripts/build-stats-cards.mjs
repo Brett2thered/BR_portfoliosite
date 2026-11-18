@@ -4,8 +4,8 @@ import { readFile, writeFile } from 'node:fs/promises';
 const stats = [
   { key:'ranking', name:'Ranked Designer', heading:'Designer ranking', value:'1', suffix:'%',
     description:'I was ranked in the top 1% of designers by AngelList (Wellfound).' },
-  { key:'capital', name:'Stats Card', heading:'Capital raised', value:'22.8', suffix:'m',
-    description:'My work has directly contributed to $22.8 million in capital raised.' },
+  { key:'capital', name:'Stats Card', heading:'Capital raised', value:'$127.7', suffix:' m',
+    description:"Teams I've helped found, build and grow with have raised a collective $127.7 million. Tapulous, Navdy, Wonder Workshop, Levels Health, Landbase, Patchowkrs and more." },
   { key:'rating', name:'Stats w/ Dark Stars', heading:'App Store rating', value:'4.9', suffix:'', stars:true,
     description:'I designed and led the highest-ranked AR app in the Apple App Store.' }
 ];

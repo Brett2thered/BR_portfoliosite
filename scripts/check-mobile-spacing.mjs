@@ -67,7 +67,7 @@ for (const [engine, browserType] of Object.entries({ chromium, webkit })) {
         assert.equal(metrics.cards.length, 28, "All 28 unique cards, including Orbi, must remain visible");
         assert.deepEqual(metrics.cards.slice(0, 7).map((card) => card.name), openingOrder,
           "The opening seven cards must follow the fixed mobile sequence");
-        assert.deepEqual(metrics.cards.slice(-3).map((card) => card.name), ['Stat: Ranked', 'Stat: $22.8m', 'Stat: 4.9★'], 'Stats remain last in the feed');
+        assert.deepEqual(metrics.cards.slice(-3).map((card) => card.name), ['Stat: Ranked', 'Stat: $127.7m', 'Stat: 4.9★'], 'Stats remain last in the feed');
         assert.ok(metrics.footerTop >= metrics.finalProjectBottom, "Thank You must remain after every project");
         assert.equal(metrics.videoRadius, "10px", "Talking video must match the 10px card corners");
         assert.ok(metrics.videoClip.includes("10px"), "Talking video must clip the embedded player to its corners");

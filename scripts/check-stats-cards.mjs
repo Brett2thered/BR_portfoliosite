@@ -10,7 +10,7 @@ await mkdir(output, {recursive:true});
 process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY = '1';
 const cards = [
   {key:'ranking',id:'8',metric:'1%',text:'AngelList (Wellfound)'},
-  {key:'capital',id:'11',metric:'22.8m',text:'capital raised'},
+  {key:'capital',id:'11',metric:'$127.7 m',text:"Teams I've helped found, build and grow with have raised a collective $127.7 million. Tapulous, Navdy, Wonder Workshop, Levels Health, Landbase, Patchowkrs and more."},
   {key:'rating',id:'23',metric:'4.9',text:'Apple App Store'}
 ];
 const results = [];
@@ -34,6 +34,7 @@ for (const [engine, type] of Object.entries({chromium,webkit})) {
         assert.equal(await card.getAttribute('data-br-id'),spec.id);
         assert.equal(await card.locator('img,picture,video,iframe,svg,canvas').count(),0,'Stats must have no image or canvas dependencies');
         assert.ok((await card.innerText()).includes(spec.text));
+        if (spec.key === 'capital') assert.equal(await card.locator('.br-stat-description').textContent(), spec.text, 'Use the requested fundraising caption verbatim');
         const geometry = await card.evaluate((card) => {
           const rect = card.getBoundingClientRect(), shell = card.querySelector('.br-stat-shell'), core = card.querySelector('.br-stat-core');
           const images = [...card.querySelectorAll('*'),card].filter((el) => /url\(/.test(getComputedStyle(el).backgroundImage));
@@ -58,7 +59,7 @@ for (const [engine, type] of Object.entries({chromium,webkit})) {
         assert.ok(geometry.valueFont.includes('SFNSDisplay-Heavy') && geometry.valueFont.includes('system-ui'), 'Use the historical system-display stack');
         assert.ok(geometry.halo.length>=3 && geometry.halo.some((layer)=>layer.blur>=geometry.valueSize*.6), 'Soft, oversized halo, not a hard offset shadow');
         assert.ok(geometry.halo.every((layer)=>layer.alpha>0 && layer.alpha<=.25), 'Keep halo layers translucent');
-        assert.equal((await card.locator('.br-stat-value').innerText()).replace(/\s+/g,''),spec.metric, 'Keep the original metric presentation');
+        assert.equal(await card.locator('.br-stat-value').innerText(),spec.metric, 'Keep the original metric presentation');
         if ([320,420,900,1440,2560,3200].includes(width)) {
           await card.scrollIntoViewIfNeeded();
           await card.screenshot({path:join(output,`${engine}-${width}-${spec.key}.png`)});

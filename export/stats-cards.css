@@ -36,7 +36,7 @@
   color: #fff;
   /* Keep long monetary values on one line when browser text is enlarged;
      descriptions still follow the full user-selected rem size. */
-  font-size: min(clamp(2.5rem, calc(.75rem + 8cqi), 4.75rem), 22cqi); font-weight: 800;
+  font-size: min(clamp(2.5rem, calc(.75rem + 8cqi), 4.75rem), var(--br-stat-size-limit, 22cqi)); font-weight: 800;
   line-height: 1.1; letter-spacing: 0; font-variant-numeric: lining-nums tabular-nums;
   white-space: nowrap;
   text-shadow:
@@ -45,6 +45,7 @@
     0 .13em .65em rgb(0 0 0 / .06);
 }
 [data-stat="ranking"] { --br-stat-shadow-opacity: .25; }
+[data-stat="capital"] { --br-stat-size-limit: 16cqi; }
 .br-stat-suffix { font: inherit; color: inherit; letter-spacing: inherit; }
 .br-stat-description {
   width: 100%; max-width: 29ch; margin: 0; text-align: center; text-wrap: pretty;

@@ -20,7 +20,7 @@
     { id: 8,  name: 'Stat: Ranked',       framerName: 'Ranked Designer' },
     { id: 9,  name: 'Meta',               framerName: 'Meta' },
     { id: 10, name: 'Hack',               framerName: 'Hack' },
-    { id: 11, name: 'Stat: $22.8m',       framerName: 'Stats Card' },
+    { id: 11, name: 'Stat: $127.7m',      framerName: 'Stats Card' },
     { id: 12, name: 'Ref: Nir Eyal',      chip: 'Reference', body: 'Nir Eyal' },
     { id: 13, name: 'Ref: Generic',       framerName: 'Reference Card' },
     { id: 14, name: 'Levels',             framerName: 'Levels' },
