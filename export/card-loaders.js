@@ -4,7 +4,7 @@
 
   var names = [
     'Brett Player', 'Cloud People', 'Anchor Player', 'New Project', 'Meta',
-    'Levels', 'Anthem', 'Arya Works', 'Navdy', 'Triton Player', 'Intel',
+    'Levels', 'Anthem', 'Arya Works', 'Navdy', 'Triton Player',
     'patchworks', 'Wonder', 'Education Card', 'Hack', 'TedX', 'Image of Reference'
   ];
   var selector = names.map(function (name) { return '[data-framer-name="' + name + '"]'; }).join(',');

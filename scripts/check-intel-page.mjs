@@ -35,6 +35,18 @@ for (const [engine, type] of Object.entries({ chromium, webkit })) {
       assert.equal(await page.locator('[data-br-id]').evaluateAll((items) => items.filter((el) => el.offsetWidth && el.offsetHeight).length), 28);
       assert.equal(await page.locator('a[data-framer-name="Anthem"]').getAttribute('href'), 'anthem.html');
       await card.scrollIntoViewIfNeeded();
+      const cover = card.locator('video');
+      assert.equal(await cover.count(), 1, 'The Intel cover needs its animated preview');
+      const coverVideo = await cover.elementHandle();
+      await page.waitForFunction((v) => {
+        const rect = v.getBoundingClientRect();
+        if (rect.bottom <= 0 || rect.top >= innerHeight) v.scrollIntoView({ block: 'center' });
+        return !v.paused && v.currentTime > .1;
+      }, coverVideo);
+      assert.ok(await cover.evaluate((v) => v.muted && v.playsInline && !v.controls));
+      await cover.evaluate((v) => { v.currentTime = v.duration - .5; });
+      await page.waitForFunction((v) => !v.paused && v.currentTime > .1 && v.currentTime < 1, coverVideo);
+      if (width === 420) await card.screenshot({ path: join(output, `${engine}-intel-cover.png`) });
       if (width === 768) { await card.focus(); await card.press('Enter'); }
       else await card.click({ position: { x: 30, y: 30 } });
       await page.waitForURL(`${base}/intel.html`, { waitUntil: 'commit' });
