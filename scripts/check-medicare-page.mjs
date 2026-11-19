@@ -49,7 +49,8 @@ for (const [engine, type] of Object.entries({ chromium, webkit })) {
       await link.focus(); await link.press('Enter');
       await page.waitForURL(`${base}/medicare.html`);
       const copy = await page.locator('main').innerText();
-      for (const text of ['National Design Studio', '30-plus steps', 'five questions']) assert.ok(copy.includes(text), text);
+      assert.ok(await page.getByRole('heading', { name: 'I cut Medicare signup from 35 steps to 5', exact: true }).isVisible());
+      for (const text of ['National Design Studio', 'five questions']) assert.ok(copy.includes(text), text);
       const embed = page.locator('#medicare-prototype');
       assert.equal(await embed.getAttribute('sandbox'), 'allow-scripts allow-modals');
       assert.ok((await embed.getAttribute('title')).includes('Medicare'));
@@ -105,7 +106,8 @@ for (const [engine, type] of Object.entries({ chromium, webkit })) {
     assert.equal(await noJs.getByRole('link', { name: 'Explore the Medicare project' }).count(), 1);
     await noJs.goto(`${base}/medicare.html`);
     assert.ok((await noJs.locator('main').innerText()).includes('National Design Studio'));
-    assert.ok(await noJs.locator('iframe').isVisible());
+    assert.ok(await noJs.getByRole('heading', { name: 'I cut Medicare signup from 35 steps to 5', exact: true }).isVisible());
+    assert.ok(await noJs.locator('#medicare-prototype').isVisible());
     await noJs.close();
   } finally { await browser.close(); }
 }
